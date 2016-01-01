@@ -18,17 +18,7 @@ def learning_rate_function():
    
 def experimental_weight_setting_function(network):
     hidden_layer = network.layers[0]
-    
-    #first_neurons_links = hidden_layer.neurons[0].links
-    #first_neurons_links[0].weight = 1.0df
-    #first_neurons_links[1].weight = 0.0
-    #first_neurons_links[2].weight = 0.0
-
-    #second_neurons_links = hidden_layer.neurons[1].links
-    #second_neurons_links[0].weight = 0.0
-    #second_neurons_links[1].weight = 1.0
-    #second_neurons_links[2].weight = 0.0
-       
+           
 # "OR" training set
 training_set = [ Instance( [0.0, 0.0], [0.0] ), Instance( [0.0, 1.0], [1.0] ), Instance( [1.0, 0.0], [1.0] ), Instance( [1.0, 1.0], [1.0] ) ]
 
