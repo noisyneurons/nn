@@ -1,4 +1,4 @@
-# nn     - Artificial Neural Network python library for machine learning research.
+# nn     - Artificial Neural Network Python library for research.
 
 "Curriculum learning" and "learning by analogy" are the focus of this research.  The goal is to create artificial neural network algorithms that generalize well -- by using a combination of flocking (i.e., a kind of "dynamic clustering") and backpropagation of both (1) output error and (2) flocking error.
 
