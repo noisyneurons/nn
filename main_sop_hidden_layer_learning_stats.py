@@ -1,9 +1,9 @@
-# main_sop_learning_stats.py  OR target function
+# main_sop_hidden_layer_learning_stats.py   XOR target function
 # test/retest program to benchmark other versions of the code...
 #
-# results= [167, 172, 163, 170, 173, 170, 167, 174, 167, 169]
+# results= [1235, 971, 935, 927, 824, 820, 780, 1088, 732, 1034]
 #
-# 169.5
+# 931.0
 
 from __future__ import division
 import math, random
@@ -23,17 +23,17 @@ def learning_rate_function():
 def experimental_weight_setting_function(network):
     hidden_layer = network.layers[0]
 
-# "OR" training set
-training_set = [ Instance( [0.0, 0.0], [0.0] ), Instance( [0.0, 1.0], [1.0] ), Instance( [1.0, 0.0], [1.0] ), Instance( [1.0, 1.0], [1.0] ) ]
+# "XOR" training set
+training_set = [ Instance( [0.0, 0.0], [0.0] ), Instance( [0.0, 1.0], [1.0] ), Instance( [1.0, 0.0], [1.0] ), Instance( [1.0, 1.0], [0.0] ) ]
 
 n_inputs = 2
 n_outputs = 1
-n_hiddens = 0
-n_hidden_layers = 0
+n_hiddens = 3
+n_hidden_layers = 1
 
 # specify neuron transforms, weight initialization, and learning rate functions... per layer eg: [ hidden_layer_1, hidden_layer_2, output_layer ]
 an_io_transform = SigmoidIO()
-neurons_ios = [ an_io_transform ]*n_hidden_layers + [ an_io_transform ] # [ SigmoidIO() ] #
+neurons_ios = [ an_io_transform ]*n_hidden_layers + [ an_io_transform ] # [ SigmoidIO() ] # 
 weight_init_functions = [ weight_init_function_random ]*n_hidden_layers + [ weight_init_function_random ]
 learning_rate_functions = [ learning_rate_function ]*n_hidden_layers + [ learning_rate_function ]
 
