@@ -165,7 +165,6 @@ class ElmanNeuron:
         return 'ElmanNeuron, Output = ' + str(self.output)
 
 
-
 class NeuronLayer:
     def __init__(self, layer_number, n_neurons, n_inputs, network, activation_function, weight_init_function, learning_rate_function):
         self.layer_number = layer_number
