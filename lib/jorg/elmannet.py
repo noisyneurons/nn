@@ -1,4 +1,4 @@
-# neuralnet.py
+# elmannet.py
 
 
 # %matplotlib inline
@@ -7,6 +7,8 @@ import math
 import random
 from collections import defaultdict
 from copy import deepcopy
+
+from jorg.activation_classes import LinearIO
 
 import numpy as np
 import pandas as pd
@@ -148,6 +150,21 @@ class BiasNeuron:
     def __str__(self):
         return 'BiasNeuron, Output = ' + str(self.output)
         
+class InputNeuron:
+    def __init__(self):
+        BiasNeuron.__init__(self)
+
+    def __str__(self):
+        return 'InputNeuron, Output = ' + str(self.output)
+
+class ElmanNeuron:
+    def __init__(self, neuron_number, network, weight_init_function, learning_rate_function):
+        Neuron.__init__(self, neuron_number, 1, network, LinearIO(), weight_init_function, learning_rate_function )
+
+    def __str__(self):
+        return 'ElmanNeuron, Output = ' + str(self.output)
+
+
 
 class NeuronLayer:
     def __init__(self, layer_number, n_neurons, n_inputs, network, activation_function, weight_init_function, learning_rate_function):
