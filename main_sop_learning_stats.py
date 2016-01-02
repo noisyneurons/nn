@@ -18,7 +18,7 @@ def learning_rate_function():
    
 def experimental_weight_setting_function(network):
     hidden_layer = network.layers[0]
-           
+
 # "OR" training set
 training_set = [ Instance( [0.0, 0.0], [0.0] ), Instance( [0.0, 1.0], [1.0] ), Instance( [1.0, 0.0], [1.0] ), Instance( [1.0, 1.0], [1.0] ) ]
 
