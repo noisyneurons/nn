@@ -150,19 +150,20 @@ class BiasNeuron:
     def __str__(self):
         return 'BiasNeuron, Output = ' + str(self.output)
         
-class InputNeuron:
+class NeuronForInput:
     def __init__(self):
         BiasNeuron.__init__(self)
 
     def __str__(self):
-        return 'InputNeuron, Output = ' + str(self.output)
+        return 'NeuronForInput, Output = ' + str(self.output)
 
-class ElmanNeuron:
-    def __init__(self, neuron_number, network, weight_init_function, learning_rate_function):
-        Neuron.__init__(self, neuron_number, 1, network, LinearIO(), weight_init_function, learning_rate_function )
+
+class NeuronElman:
+    def __init__(self, neuron_id, network, weight_init_function, learning_rate_function):
+        Neuron.__init__(self, neuron_id, 1, network, LinearIO(), weight_init_function, learning_rate_function )
 
     def __str__(self):
-        return 'ElmanNeuron, Output = ' + str(self.output)
+        return 'NeuronElman, Output = ' + str(self.output)
 
 
 class NeuronLayer:
@@ -189,7 +190,7 @@ class OutputNeuronLayer:
         self.n_neurons = n_neurons
         self.neurons = [ OutputNeuron( (layer_number,neuron_number), n_inputs, network, activation_function, weight_init_function, learning_rate_function) for neuron_number in range(0, n_neurons)]
         self.neurons_wo_bias_neuron = self.neurons
-        self.network = None
+        self.network = network
         
     def __str__(self):
         return 'Layer for Output:\n\t'+'\n\t'.join([str(neuron) for neuron in self.neurons])+''
@@ -204,7 +205,7 @@ class NeuralNet:
         self.n_outputs = n_outputs
         self.n_hidden_layers = n_hidden_layers
         
-        self.layers = None
+        self.layers = []
         self.upper_layers = None
         self.lower_layers = None
         self.upper_layers_in_reverse_order =  None
@@ -228,11 +229,14 @@ class NeuralNet:
         an_object.network = self
     
     def _create_network(self):
-        
+        # modified for Elman etc networks...
+
+        self.layers += InputNeuronLayer( 0, self.n_outputs, self.n_inputs, self, self.neurons_ios[0], self.weight_init_functions[0], self.learning_rate_functions[0] )
+
         if self.n_hidden_layers == 0:
-            # If we don't require hidden layers, only create output layer
-            layer_number=0
-            self.layers = [ OutputNeuronLayer( layer_number, self.n_outputs, self.n_inputs, self, self.neurons_ios[0], self.weight_init_functions[0], self.learning_rate_functions[0] )]
+            # If we don't require hidden layers, only append output layer
+
+            self.layers += OutputNeuronLayer( 1, self.n_outputs, self.n_inputs, self, self.neurons_ios[0], self.weight_init_functions[0], self.learning_rate_functions[0] )
             
         else:
             # create the first hidden layer
