@@ -184,6 +184,19 @@ class NeuronLayer:
         return 'Layer:\n\t'+'\n\t'.join([str(neuron) for neuron in self.neurons])+''
 
 
+class InputNeuronLayer:
+    def __init__(self, layer_number, n_neurons, n_inputs, network, activation_function, weight_init_function, learning_rate_function):
+        self.layer_number = layer_number
+        self.n_neurons = n_neurons
+        self.neurons = [NeuronForInput( (layer_number, neuron_number), network) for neuron_number in range(0, self.n_neurons)]
+        self.neurons.append(BiasNeuron())
+        self.neurons_wo_bias_neuron = self.neurons[:-1]
+        self.network = network
+
+    def __str__(self):
+        return 'Layer of Inputs:\n\t'+'\n\t'.join([str(neuron) for neuron in self.neurons])+''
+
+
 class OutputNeuronLayer:
     def __init__(self, layer_number, n_neurons, n_inputs, network, activation_function, weight_init_function, learning_rate_function):
         self.layer_number = layer_number
@@ -229,38 +242,32 @@ class NeuralNet:
         an_object.network = self
     
     def _create_network(self):
-        # modified for Elman etc networks...
+        # modified to create a wider range of networks, inclucing Elman-type networks...
 
-        self.layers += InputNeuronLayer( 0, self.n_outputs, self.n_inputs, self, self.neurons_ios[0], self.weight_init_functions[0], self.learning_rate_functions[0] )
+        # create input layer
+        layer_number = i = 0
+        self.layers.append( InputNeuronLayer( layer_number, self.n_outputs, self.n_inputs, self, self.neurons_ios[i], self.weight_init_functions[i], self.learning_rate_functions[i]) )
 
-        if self.n_hidden_layers == 0:
-            # If we don't require hidden layers, only append output layer
+        # create hidden layers
+        for layer_number in range(1, (self.n_hidden_layers + 1) ):
+            i = layer_number
+            self.layers.append( NeuronLayer( layer_number, self.n_hiddens, self.n_hiddens, self, self.neurons_ios[i], self.weight_init_functions[i], self.learning_rate_functions[i]) )
 
-            self.layers += OutputNeuronLayer( 1, self.n_outputs, self.n_inputs, self, self.neurons_ios[0], self.weight_init_functions[0], self.learning_rate_functions[0] )
-            
-        else:
-            # create the first hidden layer
-            layer_number=0
-            self.layers = [NeuronLayer( layer_number, self.n_hiddens, self.n_inputs, self, self.neurons_ios[0], self.weight_init_functions[0], self.learning_rate_functions[0] )]
+        # create output layer
+        layer_number = i = self.n_hidden_layers + 1
+        self.layers.append( OutputNeuronLayer( layer_number, self.n_outputs, self.n_hiddens, self, self.neurons_ios[i], self.weight_init_functions[i], self.learning_rate_functions[i]) )
 
-            # create remaining hidden layers
-            self.layers += [NeuronLayer( layer_number, self.n_hiddens, self.n_hiddens, self, self.neurons_ios[i+1], self.weight_init_functions[i+1], self.learning_rate_functions[i+1] ) for layer_number in range(1, (self.n_hidden_layers) )]
+        self.upper_layers = [aLayer for aLayer in self.layers[1:] ]
+        self.lower_layers = [aLayer for aLayer in self.layers[:-1]]
 
-            # create output layer
-            layer_number = self.n_hidden_layers
-            self.layers += [OutputNeuronLayer( layer_number, self.n_outputs, self.n_hiddens, self, self.neurons_ios[self.n_hidden_layers], self.weight_init_functions[self.n_hidden_layers], self.learning_rate_functions[self.n_hidden_layers]  )]
-               
-            self.upper_layers = [aLayer for aLayer in self.layers[1:] ] 
-            self.lower_layers = [aLayer for aLayer in self.layers[:-1]] 
-            
-             # add references to "output_links" going to next layer
-            for lower_layer, upper_layer in zip(self.lower_layers, self.upper_layers):
-                lower_layer.connect_to_next_layer(upper_layer)
+        # add references to "output_links" going to next layer
+        for lower_layer, upper_layer in zip(self.lower_layers, self.upper_layers):
+            lower_layer.connect_to_next_layer(upper_layer)
 
-            # Make subsequent backward error propagation code easier to write/understand!
-            self.upper_layers_in_reverse_order =  [aLayer for aLayer in reversed(self.layers[1:])] 
-            self.lower_layers_in_reverse_order =  [aLayer for aLayer in reversed(self.layers[:-1])] 
-            
+        # Make subsequent backward error propagation code easier to write/understand!
+        self.upper_layers_in_reverse_order =  [aLayer for aLayer in reversed(self.layers[1:])]
+        self.lower_layers_in_reverse_order =  [aLayer for aLayer in reversed(self.layers[:-1])]
+
     def get_links(self):
         links = []
         for layer in self.layers:
