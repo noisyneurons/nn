@@ -3,23 +3,24 @@
 
 # %matplotlib inline
 from __future__ import division
+
 import math
 import random
 from collections import defaultdict
 from copy import deepcopy
 
-from jorg.activation_classes import LinearIO
-
 import numpy as np
 import pandas as pd
 from pandas import Series, DataFrame
+
+from jorg.activation_classes import LinearIO
 
 
 def weight_init_function_random():
     return random.uniform(-0.5,0.5)
     
 def learning_rate_function():
-    return -0.1        
+    return -1.0
     
 def intermediate_post_process(trial_params, data_collector, dfs_concatenated):
     weight_series = data_collector.extract_weights(layer_number=0)
@@ -41,8 +42,7 @@ def intermediate_post_process(trial_params, data_collector, dfs_concatenated):
     dfs_concatenated = pd.concat([dfs_concatenated, df])
     
     return dfs_concatenated
-        
-    
+
 class NetworkDataCollector:
     def __init__(self, network, data_collection_interval=1):
         self.network = network
@@ -77,7 +77,7 @@ class NetworkDataCollector:
 
 class Instance:
     def __init__(self, features, targets):
-        self.features = features + [1.0]  # the appended [1.0] is the "bias input"
+        self.features = features
         self.targets = targets
         
     def __str__(self):
@@ -136,7 +136,7 @@ class Neuron:
 class OutputNeuron(Neuron):
     def __init__(self, neuron_id, n_inputs, network, activation_function, weight_init_function, learning_rate_function):
         Neuron.__init__(self, neuron_id, n_inputs, network, activation_function, weight_init_function, learning_rate_function )
-
+        self.output_links = None
 
 class BiasNeuron:
     def __init__(self):
@@ -154,6 +154,7 @@ class NeuronForInput:
     def __init__(self, neuron_id, network):
         self.neuron_id = neuron_id
         self.neuron_number = self.neuron_id[1]
+        self.output = None
         self.output_links = []
         self.network = network
 
@@ -204,10 +205,7 @@ class InputNeuronLayer:
 
     def connect_to_next_layer(self, upper_layer):
         for i, lower_neuron in enumerate(self.neurons):
-            print
-            print i
             for upper_neuron in upper_layer.learning_neurons:
-
                 lower_neuron.output_links.append(upper_neuron.links[i])
 
     def __str__(self):
@@ -228,24 +226,22 @@ class OutputNeuronLayer:
 
 
 class NeuralNet:
-    
-    def __init__(self, n_inputs, n_outputs, n_hiddens, n_hidden_layers, neurons_ios,
-    weight_init_functions, learning_rate_functions):
+    def __init__(self, n_inputs, n_outputs, n_hiddens, n_hidden_layers, neurons_ios, weight_init_functions, learning_rate_functions):
         self.n_inputs = n_inputs
         self.n_hiddens = n_hiddens
         self.n_outputs = n_outputs
         self.n_hidden_layers = n_hidden_layers
-        
+
         self.layers = []
         self.upper_layers = None
         self.lower_layers = None
         self.upper_layers_in_reverse_order =  None
-        self.lower_layers_in_reverse_order =  None 
-        
+        self.lower_layers_in_reverse_order =  None
+
         self.neurons_ios = neurons_ios
         self.weight_init_functions = weight_init_functions
         self.learning_rate_functions = learning_rate_functions
-                
+
         self.epoch = None
         self.example_number = None
         self.not_done = True
@@ -254,10 +250,10 @@ class NeuralNet:
         # Do not touch
         self._create_network()
         self._n_links = None
-        # end
-    
-    def attach_network_to(self, an_object):
-        an_object.network = self
+
+
+    # def attach_network_to(self, an_object):
+    #     an_object.network = self
     
     def _create_network(self):
         # modified to create a wider range of networks, inclucing Elman-type networks...
@@ -270,7 +266,10 @@ class NeuralNet:
         next_layer_number = 1
         for layer_number in range(next_layer_number, (self.n_hidden_layers + 1)):
             i = layer_number
-            self.layers.append( NeuronLayer( layer_number, self.n_hiddens, self.n_hiddens, self, self.neurons_ios[i], self.weight_init_functions[i], self.learning_rate_functions[i]) )
+            num_inputs_to_layer = self.n_hiddens
+            if layer_number == 1:
+                num_inputs_to_layer = self.n_inputs
+            self.layers.append( NeuronLayer( layer_number, self.n_hiddens, num_inputs_to_layer, self, self.neurons_ios[i], self.weight_init_functions[i], self.learning_rate_functions[i]) )
 
         # create output layer
         output_layer_number = i = self.n_hidden_layers + 1
@@ -282,8 +281,7 @@ class NeuralNet:
 
         self.upper_layers = [aLayer for aLayer in self.layers[1:] ]
         self.lower_layers = [aLayer for aLayer in self.layers[:-1]]
-
-        print str(self.layers[1].neurons)
+        print self.layers[1].neurons[0]
 
         # add references to "output_links" going to next layer
         for lower_layer, upper_layer in zip(self.lower_layers, self.upper_layers):
@@ -327,8 +325,8 @@ class NeuralNet:
         
     def calc_output_neurons_errors(self, network_outputs, training_targets):
         # determine error at network's output
-        errors = [ (aNetOutput - aTrainingTarget) for aNetOutput, aTrainingTarget in zip(network_outputs, training_targets) ]              
-        # store output errors in output neurons 
+        errors = [ (aNetOutput - aTrainingTarget) for aNetOutput, aTrainingTarget in zip(network_outputs, training_targets) ]
+        # store output and input errors in output neurons
         output_neurons = self.layers[-1].neurons
         for output_neuron, error in zip(output_neurons, errors):
             output_neuron.error = error
@@ -340,9 +338,9 @@ class NeuralNet:
             for neuron in lower_layer.learning_neurons:   # don't need to calculate bias neuron's error!!
                 neuron.calc_neurons_error(upper_layer)
 
-    def change_first_layer_links(self, inputs_to_layer):
+    def change_first_upper_layer_links(self, inputs_to_layer):
         # The first hidden layer receives its inputs externally, not from lower layer neurons
-        for neuron in self.layers[0].learning_neurons:
+        for neuron in self.layers[1].learning_neurons:
             neuron.change_links(inputs_to_layer)
 
     def change_upper_layers_links(self):        
@@ -364,11 +362,11 @@ class NeuralNet:
         # epoch loop
         while self.not_done:
         
-            if self.epoch > 300000:
+            if self.epoch > 3000:
                 self.nearly_done = True
                 return self.epoch, MSE
                 
-            collected_errors = []
+            collected_output_errors = []
             
             # 1-training-example per iteration
             for example_number, training_example_inputs in enumerate(training_inputs):
@@ -376,21 +374,21 @@ class NeuralNet:
                 self.example_number = example_number
                 
                 network_outputs = self.calc_networks_output( training_example_inputs )
-                
-                collected_errors += self.calc_output_neurons_errors(network_outputs, training_targets[example_number])
+
+                collected_output_errors += self.calc_output_neurons_errors(network_outputs, training_targets[example_number])
                 
                 if self.n_hidden_layers > 0:
                     self.calc_other_neurons_errors()
 
-                first_hidden_layer_outputs = [neuron.output for neuron in self.layers[1].neurons]
-                self.change_first_layer_links( first_hidden_layer_outputs )  # just a memory marker here for elman inputs to Elman neurons in the first layer!!
+                input_layer_outputs = [neuron.output for neuron in self.layers[0].neurons]
+                self.change_first_upper_layer_links(input_layer_outputs)
                 
                 if self.n_hidden_layers > 0:   
                     self.change_upper_layers_links()
 
-                data_collector.store(self.epoch, example_number)                       
+                data_collector.store(self.epoch, example_number)
             
-            sse = np.dot(collected_errors, collected_errors)
+            sse = np.dot(collected_output_errors, collected_output_errors)
             MSE = sse / (self.n_outputs * n_training_examples)
             if self.nearly_done:
                 self.not_done = False
@@ -426,7 +424,7 @@ class NeuralNet:
         """
         Load the complete configuration of a previously stored network.
         """
-        network = NeuralNet( 0, 0, 0, 0, [0], [0], [0])
+        network = NeuralNet( 0, 0, 0, 0, [0,0], [0,0], [0,0])
         
         with open( filename , 'rb') as afile:
             import cPickle

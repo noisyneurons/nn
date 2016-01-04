@@ -197,6 +197,11 @@ class NeuralNet:
         self.neurons_ios = neurons_ios
         self.weight_init_functions = weight_init_functions
         self.learning_rate_functions = learning_rate_functions
+
+        # The following lines are added for compatibility with the more advanced elmannet.py code, primarily for debugging purposes.  These lines remove the first function in each of the 3 lists
+        self.neurons_ios = self.neurons_ios[1:]
+        self.weight_init_functions = weight_init_functions[1:]
+        self.learning_rate_functions = learning_rate_functions[1:]
                 
         self.epoch = None
         self.example_number = None
@@ -212,7 +217,7 @@ class NeuralNet:
         an_object.network = self
     
     def _create_network(self):
-        
+
         if self.n_hidden_layers == 0:
             # If we don't require hidden layers, only create output layer
             layer_number=0

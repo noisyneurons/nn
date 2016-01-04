@@ -1,9 +1,15 @@
-# main_sop_learning_stats.py  OR target function
+# main_test_elman_w_hidden_layer.py
+# main_sop_hidden_layer_learning_stats.py   XOR target function
 # test/retest program to benchmark other versions of the code...
 #
-# results= [167, 172, 163, 170, 173, 170, 167, 174, 167, 169]
+# results= [1235, 971, 935, 927, 824, 820, 780, 1088, 732, 1034]
 #
-# 169.5
+# 931.0
+
+# BETTER RESULTS after ELMAN mods??
+# [890, 669, 683, 653, 614, 581, 566, 678, 574, 780]
+#
+# 661.0
 
 from __future__ import division
 import math, random
@@ -20,18 +26,14 @@ from jorg.activation_classes import SigmoidIO, LinearIO, GaussGauss, Gauss, STDN
 
 def learning_rate_function():
     return -1.0
-   
-def experimental_weight_setting_function(network):
-    xxx = 1
-    #hidden_layer = network.layers[0]
 
-# "OR" training set
-training_set = [ Instance( [0.0, 0.0], [0.0] ), Instance( [0.0, 1.0], [1.0] ), Instance( [1.0, 0.0], [1.0] ), Instance( [1.0, 1.0], [1.0] ) ]
+# "XOR" training set
+training_set = [ Instance( [0.0, 0.0], [0.0] ), Instance( [0.0, 1.0], [1.0] ), Instance( [1.0, 0.0], [1.0] ), Instance( [1.0, 1.0], [0.0] ) ]
 
 n_inputs = 2
 n_outputs = 1
-n_hiddens = 0
-n_hidden_layers = 0
+n_hiddens = 3
+n_hidden_layers = 1
 
 # specify neuron transforms, weight initialization, and learning rate functions... per layer eg: [ hidden_layer_1, hidden_layer_2, output_layer ]
 an_io_transform = SigmoidIO()
@@ -50,9 +52,6 @@ for seed_value in range(10):
                         weight_init_functions, learning_rate_functions)
 
     print "\n\nNetwork State just after creation\n", network
-
-    
-    experimental_weight_setting_function(network)
     
     data_collection_interval = 1000
     data_collector = NetworkDataCollector(network, data_collection_interval)
