@@ -179,14 +179,23 @@ class NeuronElman:
 
 
 class NeuronLayer:
-    def __init__(self, layer_number, n_neurons, n_inputs, network, activation_function, weight_init_function, learning_rate_function):
+    #def __init__(self, layer_number, n_neurons, n_inputs, network, activation_function, weight_init_function, learning_rate_function):
+    def __init__(self, layer_number, network):
         self.layer_number = layer_number
-        self.n_neurons = n_neurons
-        self.neurons = [Neuron( (layer_number,neuron_number), n_inputs, network, activation_function, weight_init_function, learning_rate_function) for neuron_number in range(0, self.n_neurons)]
+        self.network = network
+        n_neurons_for_each_layer = network.n_neurons_for_each_layer
+        n_neurons = n_neurons_for_each_layer[layer_number]
+        n_inputs = n_neurons_for_each_layer[layer_number-1]
+        neurons_io = network.neurons_ios[layer_number]
+        weight_init_function = network.weight_init_functions[layer_number]
+        learning_rate_function = network.learning_rate_functions[layer_number]
+
+        self.neurons = [Neuron( (layer_number,neuron_number), n_inputs, network, neurons_io, weight_init_function, learning_rate_function) for neuron_number in range(0, n_neurons)]
+
         self.neurons.append(BiasNeuron())
         self.neurons_wo_bias_neuron = self.neurons[:-1]
         self.learning_neurons = self.neurons_wo_bias_neuron
-        self.network = network
+
         
     def connect_to_next_layer(self, upper_layer):
         for i, lower_neuron in enumerate(self.neurons):
@@ -198,10 +207,11 @@ class NeuronLayer:
 
 
 class InputNeuronLayer:
-    def __init__(self, layer_number, n_neurons, network):
+    # This version does not currently contain 'learning elman neurons'
+    def __init__(self, layer_number, network):
         self.network = network
         self.layer_number = layer_number
-        self.n_neurons = n_neurons
+        self.n_neurons = network.n_neurons_for_each_layer[layer_number]
         self.neurons = [NeuronForInput( (layer_number, neuron_number), network) for neuron_number in range(0, self.n_neurons)]
         self.neurons.append(BiasNeuron())
         self.neurons_wo_bias_neuron = self.neurons[:-1]
@@ -217,13 +227,20 @@ class InputNeuronLayer:
 
 
 class OutputNeuronLayer:
-    def __init__(self, layer_number, n_neurons, n_inputs, network, activation_function, weight_init_function, learning_rate_function):
+    #def __init__(self, layer_number, n_neurons, n_inputs, network, activation_function, weight_init_function, learning_rate_function):
+    def __init__(self, layer_number, network):
         self.layer_number = layer_number
-        self.n_neurons = n_neurons
-        self.neurons = [ OutputNeuron( (layer_number,neuron_number), n_inputs, network, activation_function, weight_init_function, learning_rate_function) for neuron_number in range(0, n_neurons)]
+        self.network = network
+        n_neurons_for_each_layer = network.n_neurons_for_each_layer
+        n_neurons = n_neurons_for_each_layer[layer_number]
+        n_inputs = n_neurons_for_each_layer[layer_number-1]
+        neurons_io = network.neurons_ios[layer_number]
+        weight_init_function = network.weight_init_functions[layer_number]
+        learning_rate_function = network.learning_rate_functions[layer_number]
+
+        self.neurons = [ OutputNeuron( (layer_number,neuron_number), n_inputs, network, neurons_io, weight_init_function, learning_rate_function) for neuron_number in range(0, n_neurons)]
         self.neurons_wo_bias_neuron = self.neurons
         self.learning_neurons = self.neurons_wo_bias_neuron
-        self.network = network
         
     def __str__(self):
         return 'Layer for Output:\n\t'+'\n\t'.join([str(neuron) for neuron in self.neurons])+''
@@ -269,16 +286,19 @@ class NeuralNet:
 
         # create input layer; i represents the 'current' layer number
         i = 0
-        self.layers.append( InputNeuronLayer( 0, self.n_neurons_for_each_layer[0], self) )
+        # self.layers.append( InputNeuronLayer( 0, self.n_neurons_for_each_layer[0], self) )
+        self.layers.append( InputNeuronLayer( 0, self) )
 
         if self.hidden_layers_present:
         # create hidden layers
             for i in range(1, (self.n_hidden_layers + 1)):
-                self.layers.append( NeuronLayer( i, self.n_neurons_for_each_layer[i], self.n_neurons_for_each_layer[i-1], self, self.neurons_ios[i], self.weight_init_functions[i], self.learning_rate_functions[i]) )
+                self.layers.append( NeuronLayer( i, self) )
 
         # create output layer
         i = self.n_hidden_layers + 1
-        self.layers.append( OutputNeuronLayer( i, self.n_neurons_for_each_layer[i], self.n_neurons_for_each_layer[i-1], self, self.neurons_ios[i], self.weight_init_functions[i], self.learning_rate_functions[i]) )
+        #self.layers.append( OutputNeuronLayer( i, self.n_neurons_for_each_layer[i], self.n_neurons_for_each_layer[i-1], self, self.neurons_ios[i], self.weight_init_functions[i], self.learning_rate_functions[i]) )
+        self.layers.append( OutputNeuronLayer( i, self) )
+
 
         self.upper_layers = [aLayer for aLayer in self.layers[1:] ]
         self.lower_layers = [aLayer for aLayer in self.layers[:-1]]
