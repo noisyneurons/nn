@@ -99,9 +99,10 @@ class Link:
         return str(self.weight)
 
 
-class Neuron:
+class HiddenNeuron:
     def __init__(self, neuron_id, n_inputs, network, activation_function, weight_init_function, learning_rate_function):
         self.neuron_id = neuron_id
+        self.neuron_number = neuron_id[1]
         self.n_inputs = n_inputs
         self.network = network
         self.links = [ Link(weight_init_function) for _ in range(0, n_inputs+1)]  # +1 for bias link
@@ -120,8 +121,8 @@ class Neuron:
         return self.output
         
     def calc_neurons_error(self, upper_layer):
-        errors_at_next_layer = [neuron.error_at_input for neuron in upper_layer.learning_neurons]
-        self.error = np.dot(errors_at_next_layer, [link.weight for link in self.output_links])
+        input_errors_at_next_layer = [neuron.error_at_input for neuron in upper_layer.learning_neurons]
+        self.error = np.dot(input_errors_at_next_layer, [link.weight for link in self.output_links])
         self.calc_neurons_input_error()
         
     def calc_neurons_input_error(self):
@@ -137,9 +138,9 @@ class Neuron:
         return 'Neuron Weights: %s  Net Input: %s  Output: %s' % (str(weights), str(self.netinput),  str(self.output))
  
  
-class OutputNeuron(Neuron):
+class OutputNeuron(HiddenNeuron):
     def __init__(self, neuron_id, n_inputs, network, activation_function, weight_init_function, learning_rate_function):
-        Neuron.__init__(self, neuron_id, n_inputs, network, activation_function, weight_init_function, learning_rate_function )
+        HiddenNeuron.__init__(self, neuron_id, n_inputs, network, activation_function, weight_init_function, learning_rate_function)
         self.output_links = None
 
 class BiasNeuron:
@@ -154,10 +155,10 @@ class BiasNeuron:
     def __str__(self):
         return 'BiasNeuron, Output = ' + str(self.output)
         
-class NeuronForInput:
+class InputNeuron:
     def __init__(self, neuron_id, network):
         self.neuron_id = neuron_id
-        self.neuron_number = self.neuron_id[1]
+        self.neuron_number = neuron_id[1]
         self.output = None
         self.output_links = []
         self.network = network
@@ -172,13 +173,13 @@ class NeuronForInput:
 
 class NeuronElman:
     def __init__(self, neuron_id, network, weight_init_function, learning_rate_function):
-        Neuron.__init__(self, neuron_id, 1, network, LinearIO(), weight_init_function, learning_rate_function )
+        HiddenNeuron.__init__(self, neuron_id, 1, network, LinearIO(), weight_init_function, learning_rate_function)
 
     def __str__(self):
         return 'NeuronElman, Output = ' + str(self.output)
 
 
-class NeuronLayer:
+class HiddenNeuronLayer:
     #def __init__(self, layer_number, n_neurons, n_inputs, network, activation_function, weight_init_function, learning_rate_function):
     def __init__(self, layer_number, network):
         self.layer_number = layer_number
@@ -190,7 +191,7 @@ class NeuronLayer:
         weight_init_function = network.weight_init_functions[layer_number]
         learning_rate_function = network.learning_rate_functions[layer_number]
 
-        self.neurons = [Neuron( (layer_number,neuron_number), n_inputs, network, neurons_io, weight_init_function, learning_rate_function) for neuron_number in range(0, n_neurons)]
+        self.neurons = [HiddenNeuron((layer_number, neuron_number), n_inputs, network, neurons_io, weight_init_function, learning_rate_function) for neuron_number in range(0, n_neurons)]
 
         self.neurons.append(BiasNeuron())
         self.neurons_wo_bias_neuron = self.neurons[:-1]
@@ -212,7 +213,7 @@ class InputNeuronLayer:
         self.network = network
         self.layer_number = layer_number
         self.n_neurons = network.n_neurons_for_each_layer[layer_number]
-        self.neurons = [NeuronForInput( (layer_number, neuron_number), network) for neuron_number in range(0, self.n_neurons)]
+        self.neurons = [InputNeuron((layer_number, neuron_number), network) for neuron_number in range(0, self.n_neurons)]
         self.neurons.append(BiasNeuron())
         self.neurons_wo_bias_neuron = self.neurons[:-1]
         self.learning_neurons = []
@@ -238,7 +239,7 @@ class OutputNeuronLayer:
         weight_init_function = network.weight_init_functions[layer_number]
         learning_rate_function = network.learning_rate_functions[layer_number]
 
-        self.neurons = [ OutputNeuron( (layer_number,neuron_number), n_inputs, network, neurons_io, weight_init_function, learning_rate_function) for neuron_number in range(0, n_neurons)]
+        self.neurons = [OutputNeuron((layer_number, neuron_number), n_inputs, network, neurons_io, weight_init_function, learning_rate_function) for neuron_number in range(0, n_neurons)]
         self.neurons_wo_bias_neuron = self.neurons
         self.learning_neurons = self.neurons_wo_bias_neuron
         
@@ -292,7 +293,7 @@ class NeuralNet:
         if self.hidden_layers_present:
         # create hidden layers
             for i in range(1, (self.n_hidden_layers + 1)):
-                self.layers.append( NeuronLayer( i, self) )
+                self.layers.append(HiddenNeuronLayer(i, self))
 
         # create output layer
         i = self.n_hidden_layers + 1
@@ -347,7 +348,7 @@ class NeuralNet:
     def calc_output_neurons_errors(self, network_outputs, training_targets):
         # determine error at network's output
         errors = [ (aNetOutput - aTrainingTarget) for aNetOutput, aTrainingTarget in zip(network_outputs, training_targets) ]
-        # store output and input errors in output neurons
+        # then calc & store errors in output neurons
         output_neurons = self.layers[-1].neurons
         for output_neuron, error in zip(output_neurons, errors):
             output_neuron.error = error
@@ -356,7 +357,7 @@ class NeuralNet:
         
     def calc_other_neurons_errors(self):
         for lower_layer, upper_layer in zip(self.lower_layers_in_reverse_order, self.upper_layers_in_reverse_order):     
-            for neuron in lower_layer.learning_neurons:   # don't need to calculate bias neuron's error!!
+            for neuron in lower_layer.learning_neurons:   #.learning_neurons.. We don't need to calculate bias neuron's error!!
                 neuron.calc_neurons_error(upper_layer)
 
     def change_first_upper_layer_links(self, inputs_to_layer):
@@ -364,10 +365,17 @@ class NeuralNet:
         for neuron in self.layers[1].learning_neurons:
             neuron.change_links(inputs_to_layer)
 
-    def change_upper_layers_links(self):        
-        for lower_layer, upper_layer in zip(self.layers[:-1], self.layers[1:]):
+    def change_all_layers_links(self):
+        self.change_input_layer_links()
+        for lower_layer, upper_layer in zip(self.lower_layers, self.upper_layers):
             lower_layer_neuron_outputs = [neuron.output for neuron in lower_layer.neurons]
             for neuron in upper_layer.learning_neurons:
+                neuron.change_links(lower_layer_neuron_outputs)
+
+    #TODO needs to be modified for true Elman
+    def change_input_layer_links(self):
+        lower_layer_neuron_outputs = [neuron.output for neuron in self.layers[0].neurons]
+        for neuron in self.layers[0].learning_neurons:
                 neuron.change_links(lower_layer_neuron_outputs)
 
     def backpropagation(self, training_set, ERROR_LIMIT, data_collector):
@@ -395,17 +403,9 @@ class NeuralNet:
                 self.example_number = example_number
                 
                 network_outputs = self.calc_networks_output( training_example_inputs )
-
                 collected_output_errors += self.calc_output_neurons_errors(network_outputs, training_targets[example_number])
-                
-                if self.n_hidden_layers > 0:
-                    self.calc_other_neurons_errors()
-
-                input_layer_outputs = [neuron.output for neuron in self.layers[0].neurons]
-                self.change_first_upper_layer_links(input_layer_outputs)
-                
-                if self.n_hidden_layers > 0:   
-                    self.change_upper_layers_links()
+                self.calc_other_neurons_errors()
+                self.change_all_layers_links()
 
                 data_collector.store(self.epoch, example_number)
             
