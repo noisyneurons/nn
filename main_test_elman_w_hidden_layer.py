@@ -33,7 +33,11 @@ training_set = [ Instance( [0.0, 0.0], [0.0] ), Instance( [0.0, 1.0], [1.0] ), I
 n_inputs = 2
 n_outputs = 1
 n_hiddens = 3
-n_hidden_layers = 1
+n_neurons_for_each_layer = [n_inputs, n_hiddens, n_outputs]
+
+n_hidden_layers = 0
+if len(n_neurons_for_each_layer) > 2:
+    n_hidden_layers = len(n_neurons_for_each_layer) - 2
 
 # specify neuron transforms, weight initialization, and learning rate functions... per layer eg: [ hidden_layer_1, hidden_layer_2, output_layer ]
 an_io_transform = SigmoidIO()
@@ -48,8 +52,7 @@ for seed_value in range(10):
     random.seed(seed_value)
         
     # initialize the neural network
-    network = NeuralNet(n_inputs, n_outputs, n_hiddens, n_hidden_layers, neurons_ios,
-                        weight_init_functions, learning_rate_functions)
+    network = NeuralNet(n_neurons_for_each_layer, neurons_ios, weight_init_functions, learning_rate_functions)
 
     print "\n\nNetwork State just after creation\n", network
     

@@ -87,6 +87,10 @@ class Link:
     def __init__(self, weight_init_function):
         self.weight_init_function = weight_init_function
         self.weight = self.weight_init_function()
+        self.source_neuron = None
+
+    def set_source_neuron(self, source_neuron):
+        self.source_neuron = source_neuron
     
     def increment_weight_by(self, delta_w):
         self.weight += delta_w
@@ -226,11 +230,16 @@ class OutputNeuronLayer:
 
 
 class NeuralNet:
-    def __init__(self, n_inputs, n_outputs, n_hiddens, n_hidden_layers, neurons_ios, weight_init_functions, learning_rate_functions):
-        self.n_inputs = n_inputs
-        self.n_hiddens = n_hiddens
-        self.n_outputs = n_outputs
-        self.n_hidden_layers = n_hidden_layers
+    def __init__(self, n_neurons_for_each_layer, neurons_ios, weight_init_functions, learning_rate_functions):
+
+        self.n_neurons_for_each_layer = n_neurons_for_each_layer
+        self.n_inputs = n_neurons_for_each_layer[0]
+        self.n_outputs = n_neurons_for_each_layer[-1]
+        self.n_hidden_layers = 0
+        self.hidden_layers_present = False
+        if len(n_neurons_for_each_layer) > 2:
+            self.n_hidden_layers = len(n_neurons_for_each_layer) - 2
+            self.hidden_layers_present = True
 
         self.layers = []
         self.upper_layers = None
@@ -258,26 +267,18 @@ class NeuralNet:
     def _create_network(self):
         # modified to create a wider range of networks, inclucing Elman-type networks...
 
-        # create input layer
-        layer_number = i = 0
-        self.layers.append( InputNeuronLayer( layer_number, self.n_inputs, self) )
+        # create input layer; i represents the 'current' layer number
+        i = 0
+        self.layers.append( InputNeuronLayer( 0, self.n_neurons_for_each_layer[0], self) )
 
+        if self.hidden_layers_present:
         # create hidden layers
-        next_layer_number = 1
-        for layer_number in range(next_layer_number, (self.n_hidden_layers + 1)):
-            i = layer_number
-            num_inputs_to_layer = self.n_hiddens
-            if layer_number == 1:
-                num_inputs_to_layer = self.n_inputs
-            self.layers.append( NeuronLayer( layer_number, self.n_hiddens, num_inputs_to_layer, self, self.neurons_ios[i], self.weight_init_functions[i], self.learning_rate_functions[i]) )
+            for i in range(1, (self.n_hidden_layers + 1)):
+                self.layers.append( NeuronLayer( i, self.n_neurons_for_each_layer[i], self.n_neurons_for_each_layer[i-1], self, self.neurons_ios[i], self.weight_init_functions[i], self.learning_rate_functions[i]) )
 
         # create output layer
-        output_layer_number = i = self.n_hidden_layers + 1
-        num_inputs_to_output_layer = self.n_hiddens
-        if self.n_hidden_layers == 0:
-            num_inputs_to_output_layer = self.n_inputs
-
-        self.layers.append( OutputNeuronLayer( output_layer_number, self.n_outputs, num_inputs_to_output_layer, self, self.neurons_ios[i], self.weight_init_functions[i], self.learning_rate_functions[i]) )
+        i = self.n_hidden_layers + 1
+        self.layers.append( OutputNeuronLayer( i, self.n_neurons_for_each_layer[i], self.n_neurons_for_each_layer[i-1], self, self.neurons_ios[i], self.weight_init_functions[i], self.learning_rate_functions[i]) )
 
         self.upper_layers = [aLayer for aLayer in self.layers[1:] ]
         self.lower_layers = [aLayer for aLayer in self.layers[:-1]]
@@ -403,9 +404,10 @@ class NeuralNet:
         return {
             "n_inputs"              : self.n_inputs,
             "n_outputs"             : self.n_outputs,
-            "n_hiddens"             : self.n_hiddens,
-            "n_hidden_layers"       : self.n_hidden_layers,
-            "neurons_ios"           : self.neurons_ios,
+            "n_neurons_for_each_layer"             : self.n_neurons_for_each_layer,
+            "n_hidden_layers"         : self.n_hidden_layers,
+            "hidden_layers_present"  : self.hidden_layers_present,
+            "neurons_ios"            : self.neurons_ios,
             "weight_init_functions"     : self.weight_init_functions,
             "learning_rate_functions"   : self.learning_rate_functions,
             "n_links"               : self.n_links,

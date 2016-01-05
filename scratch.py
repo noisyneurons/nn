@@ -1,32 +1,17 @@
 #temp
 from __future__ import division
-import math, random
-from scipy.stats import norm
-import numpy as np
-from pandas import Series, DataFrame
-import pandas as pd
-import matplotlib.pyplot as plt
 
 
+class Neuron:
+    def __init__(self,x):
+        self.x = x
 
-print 1 + 2
+    def print_it(self):
+        print str(self.x)
 
+a_list = [Neuron, 4]
+g = a_list[0](33)
 
-#decision = None
-#aValue = 1
-#if aValue == None:
-    #decision = False
-#else:
-    #decision = True
-        
-#ds1 = Series([1,2,3])
-#ds2 = Series([5])
+# g = Neuron(33)
 
-#l1 = [1,2,3]
-#l2 = [5]
-
-#df = DataFrame([l1,l2], columns = ["c1","c2","c3"])  
-
-#print df 
-
-#print len(df)
+g.print_it()
