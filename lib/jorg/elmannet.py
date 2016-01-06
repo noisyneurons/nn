@@ -378,6 +378,17 @@ class NeuralNet:
         for neuron in self.layers[0].learning_neurons:
                 neuron.change_links(lower_layer_neuron_outputs)
 
+    # #TODO This assumes a 1-to-1 Elman recurrent connections
+    # def change_input_layer_links(self):
+    #     for ff_neuron, elman_neuron in zip(self.layers[0].ff_neurons:
+    #
+    #         neuron.change_links(ff_neuron.output)
+    #
+    #     lower_layer_neuron_outputs = [neuron.output for neuron in self.layers[0].ff_neurons]
+    #     for neuron in self.layers[0].learning_neurons:
+    #             neuron.change_links(lower_layer_neuron_outputs)
+    #
+
     def backpropagation(self, training_set, ERROR_LIMIT, data_collector):
         n_training_examples = len(training_set)
         training_inputs  =  [instance.features for instance in training_set]
