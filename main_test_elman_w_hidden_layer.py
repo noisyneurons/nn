@@ -54,7 +54,7 @@ for seed_value in range(10):
     # initialize the neural network
     network = NeuralNet(n_neurons_for_each_layer, neurons_ios, weight_init_functions, learning_rate_functions)
 
-    print "\n\nNetwork State just after creation\n", network
+    #print "\n\nNetwork State just after creation\n", network
     
     data_collection_interval = 1000
     data_collector = NetworkDataCollector(network, data_collection_interval)
