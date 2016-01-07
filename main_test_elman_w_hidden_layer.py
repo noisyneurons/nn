@@ -1,6 +1,6 @@
 # main_test_elman_w_hidden_layer.py
 # main_sop_hidden_layer_learning_stats.py   XOR target function
-# test/retest program to benchmark other versions of the code...
+# test/retest program results --> to benchmark other versions of the code...
 #
 # results= [1235, 971, 935, 927, 824, 820, 780, 1088, 732, 1034]
 #
@@ -8,12 +8,8 @@
 
 from __future__ import division
 import math, random
-import numpy as np   
-import matplotlib.pyplot as plt
-from pandas import Series, DataFrame
-import pandas as pd
+import numpy as np
 
-#from jorg.neuralnet import \
 from jorg.elmannet import \
 NeuralNet, Instance, NetworkDataCollector, weight_init_function_random, learning_rate_function
 
@@ -55,7 +51,7 @@ for seed_value in range(10):
     data_collector = NetworkDataCollector(network, data_collection_interval)
     
     # start training on test set one
-    epoch_and_MSE = network.backpropagation(training_set, 0.01, data_collector)
+    epoch_and_MSE = network.backpropagation(training_set, 0.01, 3000, data_collector)
     results.append(epoch_and_MSE[0])
 
     # save the network

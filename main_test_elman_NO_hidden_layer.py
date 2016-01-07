@@ -1,5 +1,5 @@
 # main_test_elman_NO_hidden_layer.py
-# test/retest program to benchmark other versions of the code...
+# test/retest program results --> to benchmark other versions of the code...
 #
 # results= [167, 172, 163, 170, 173, 170, 167, 174, 167, 169]
 #
@@ -8,11 +8,7 @@
 from __future__ import division
 import math, random
 import numpy as np   
-import matplotlib.pyplot as plt
-from pandas import Series, DataFrame
-import pandas as pd
 
-#from jorg.neuralnet import \
 from jorg.elmannet import \
 NeuralNet, Instance, NetworkDataCollector, weight_init_function_random, learning_rate_function
 
@@ -22,8 +18,7 @@ def learning_rate_function():
     return -1.0
    
 def experimental_weight_setting_function(network):
-    xxx = 1
-    #hidden_layer = network.layers[0]
+    pass
 
 # "OR" training set
 training_set = [ Instance( [0.0, 0.0], [0.0] ), Instance( [0.0, 1.0], [1.0] ), Instance( [1.0, 0.0], [1.0] ), Instance( [1.0, 1.0], [1.0] ) ]
@@ -54,14 +49,13 @@ for seed_value in range(10):
 
     print "\n\nNetwork State just after creation\n", network
 
-    
     experimental_weight_setting_function(network)
     
     data_collection_interval = 1000
     data_collector = NetworkDataCollector(network, data_collection_interval)
     
     # start training on test set one
-    epoch_and_MSE = network.backpropagation(training_set, 0.01, data_collector)
+    epoch_and_MSE = network.backpropagation(training_set, 0.01, 3000, data_collector)
     results.append(epoch_and_MSE[0])
 
     # save the network
