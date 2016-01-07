@@ -73,7 +73,7 @@ for seed_value in range(10):
 
     # print out the result
     for instance in training_set:
-        output_from_network = network.calc_networks_output(instance.features)
+        output_from_network = network.calc_networks_output()
         print "\tnetworks input:", instance.features, "\tnetworks output:", output_from_network, "\ttarget:", instance.targets
 
 print results

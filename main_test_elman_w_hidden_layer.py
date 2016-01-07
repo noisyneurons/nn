@@ -6,11 +6,6 @@
 #
 # 931.0
 
-# BETTER RESULTS after ELMAN mods??
-# [890, 669, 683, 653, 614, 581, 566, 678, 574, 780]
-#
-# 661.0
-
 from __future__ import division
 import math, random
 import numpy as np   
@@ -72,7 +67,7 @@ for seed_value in range(10):
 
     # print out the result
     for instance in training_set:
-        output_from_network = network.calc_networks_output(instance.features)
+        output_from_network = network.calc_networks_output()
         print "\tnetworks input:", instance.features, "\tnetworks output:", output_from_network, "\ttarget:", instance.targets
 
 print results

@@ -294,13 +294,13 @@ class NeuralNet:
     def change_first_layer_links(self, inputs_to_layer):
         # The first hidden layer receives its inputs externally, not from lower layer neurons
         for neuron in self.layers[0].neurons_wo_bias_neuron:
-            neuron.change_links(inputs_to_layer)
+            neuron.adapt_weights_in_links()
 
     def change_upper_layers_links(self):        
         for lower_layer, upper_layer in zip(self.layers[:-1], self.layers[1:]):
             lower_layer_neuron_outputs = [neuron.output for neuron in lower_layer.neurons]
             for neuron in upper_layer.neurons_wo_bias_neuron:
-                neuron.change_links(lower_layer_neuron_outputs)
+                neuron.adapt_weights_in_links()
 
     def backpropagation(self, trainingset, ERROR_LIMIT, data_collector): 
         n_training_examples = len(trainingset)
