@@ -1,5 +1,4 @@
-# elmannet.py
-
+# neuralnet_v1.py
 
 # %matplotlib inline
 from __future__ import division
@@ -14,7 +13,6 @@ import pandas as pd
 from pandas import Series, DataFrame
 
 from jorg.activation_classes import LinearIO
-
 
 def weight_init_function_random():
     return random.uniform(-0.5,0.5)
