@@ -1,12 +1,11 @@
 # elmannet.py
 
-
 # %matplotlib inline
 from __future__ import division
 
 import math
 import random
-from collections import defaultdict
+from collections import defaultdict, deque
 from copy import deepcopy
 
 import numpy as np
@@ -14,7 +13,6 @@ import pandas as pd
 from pandas import Series, DataFrame
 
 from jorg.activation_classes import LinearIO
-
 
 def weight_init_function_random():
     return random.uniform(-0.5,0.5)
@@ -50,6 +48,232 @@ def intermediate_post_process(trial_params, data_collector, dfs_concatenated):
     
     return dfs_concatenated
 
+class NeuralNet:
+    def __init__(self, n_neurons_for_each_layer, neurons_ios, weight_init_functions, learning_rate_functions):
+
+        self.n_neurons_for_each_layer = n_neurons_for_each_layer
+        self.n_inputs = n_neurons_for_each_layer[0]
+        self.n_outputs = n_neurons_for_each_layer[-1]
+        self.n_hidden_layers = 0
+        self.hidden_layers_present = False
+        if len(n_neurons_for_each_layer) > 2:
+            self.n_hidden_layers = len(n_neurons_for_each_layer) - 2
+            self.hidden_layers_present = True
+
+        self.layers = []
+        self.upper_layers = None
+        self.lower_layers = None
+        self.upper_layers_in_reverse_order =  None
+        self.lower_layers_in_reverse_order =  None
+
+        self.neurons_ios = neurons_ios
+        self.weight_init_functions = weight_init_functions
+        self.learning_rate_functions = learning_rate_functions
+
+        self.n_training_examples = None
+
+        self.epoch = None
+        self.example_number = None
+        self.inputs_for_training_example = None
+        self.not_done = True
+        self.nearly_done = False
+
+        # Do not touch
+        self._create_network()
+        self._n_links = None
+
+    def _create_network(self):
+        # modified to create a wider range of networks, inclucing Elman-type networks...
+
+        # create input layer; i represents the 'current' layer number
+        i = 0
+        self.layers.append( InputNeuronLayer( i, self) )
+
+        if self.hidden_layers_present:
+        # create hidden layers
+            for ii in range(1, (self.n_hidden_layers + 1)):
+                self.layers.append(HiddenNeuronLayer(ii, self))
+
+        # create output layer
+        i = self.n_hidden_layers + 1
+        self.layers.append( OutputNeuronLayer( i, self) )
+
+        self.upper_layers = [aLayer for aLayer in self.layers[1:] ]
+        self.lower_layers = [aLayer for aLayer in self.layers[:-1]]
+        # Make subsequent backward error propagation code easier to write/understand!
+        self.upper_layers_in_reverse_order =  [aLayer for aLayer in reversed(self.layers[1:])]
+        self.lower_layers_in_reverse_order =  [aLayer for aLayer in reversed(self.layers[:-1])]
+
+        # connect layers and... (depending on specific architecture, e.g. Elman arch)
+        for lower_layer, upper_layer in zip(self.lower_layers, self.upper_layers):
+            connect_to_next_layer(lower_layer, upper_layer)
+
+        #TODO  add code here or above previous block: ... to add links from 1st hidden layer to Elman neurons in input layer (the '0th layer').
+
+    def get_links(self):
+        links = []
+        for layer in self.layers:
+            for neuron in layer.learning_neurons:
+                links += neuron.links
+        return links
+
+    @property
+    def n_links(self):
+        if not self._n_links:
+            self._n_links = len(self.get_links())
+        return self._n_links
+
+    def set_links(self, links):
+        stop = 0
+        for layer in self.layers:
+            for neuron in layer.learning_neurons:
+                start, stop = stop, (stop + len(neuron.links))
+                neuron.links = links[start:stop]
+        return self
+
+    def calc_networks_output(self):
+        for layer in self.layers:
+            for neuron in layer.neurons_wo_bias_neuron:
+                neuron.calc_neurons_output()
+        return [neuron.output for neuron in self.layers[-1].neurons ]
+
+
+    def calc_output_neurons_errors(self, network_outputs, training_targets):
+        # determine error at network's output
+        errors = [ (aNetOutput - aTrainingTarget) for aNetOutput, aTrainingTarget in zip(network_outputs, training_targets) ]
+        # then calc & store errors in output neurons
+        output_neurons = self.layers[-1].neurons
+        for output_neuron, error in zip(output_neurons, errors):
+            output_neuron.error = error
+            output_neuron.calc_neurons_input_error()
+        return errors
+
+    def calc_other_neurons_errors(self):
+        for lower_layer, upper_layer in zip(self.lower_layers_in_reverse_order, self.upper_layers_in_reverse_order):
+            for neuron in lower_layer.learning_neurons:   #.learning_neurons.. We don't need to calculate bias neuron's error!!
+                neuron.calc_neurons_error(upper_layer)
+
+    def change_first_upper_layer_links(self, inputs_to_layer):
+        # The first hidden layer receives its inputs externally, not from lower layer neurons
+        for neuron in self.layers[1].learning_neurons:
+            neuron.adapt_weights_in_links()
+
+    def adapt_all_layers(self):
+        # self.change_input_layer_links()
+        for layer in self.layers:
+            for neuron in layer.learning_neurons:
+                neuron.adapt_weights_in_links()
+
+
+    #TODO needs to be modified for true Elman
+    # def change_input_layer_links(self):
+    #     lower_layer_neuron_outputs = [neuron.output for neuron in self.layers[0].neurons]
+    #     for neuron in self.layers[0].learning_neurons:
+    #         neuron.adapt_weights_in_links()
+
+    # #TODO This assumes a 1-to-1 Elman recurrent connections
+    # def change_input_layer_links(self):
+    #     for ff_neuron, elman_neuron in zip(self.layers[0].ff_neurons:
+    #
+    #         neuron.change_links(ff_neuron.output)
+    #
+    #     lower_layer_neuron_outputs = [neuron.output for neuron in self.layers[0].ff_neurons]
+    #     for neuron in self.layers[0].learning_neurons:
+    #             neuron.change_links(lower_layer_neuron_outputs)
+    #
+
+    def backpropagation(self, training_set, error_limit, max_epochs, data_collector):
+        self.n_training_examples = len(training_set)
+        training_inputs  =  [instance.features for instance in training_set]
+        training_targets =  [instance.targets for instance in training_set]
+
+        MSE      = 1000.0 # any large enough number is good enough!
+        self.epoch = 0
+        self.not_done = True
+        self.nearly_done = False
+
+        # epoch loop
+        while self.not_done:
+
+            if self.epoch > max_epochs:
+                self.nearly_done = True
+                return self.epoch, MSE
+
+            collected_output_errors = []
+
+            # 1-training-example per iteration
+            for example_number, inputs_for_training_example in enumerate(training_inputs):
+
+                self.example_number = example_number
+                self.inputs_for_training_example = inputs_for_training_example
+                # print "\n\nNetwork State just before net outputs calculated\n", self
+                network_outputs = self.calc_networks_output()
+                collected_output_errors += self.calc_output_neurons_errors(network_outputs, training_targets[example_number])
+                self.calc_other_neurons_errors()
+                self.adapt_all_layers()
+
+                data_collector.store(self.epoch, example_number)
+
+            sse = np.dot(collected_output_errors, collected_output_errors)
+            MSE = sse / (self.n_outputs * self.n_training_examples)
+            if self.nearly_done:
+                self.not_done = False
+            if MSE < error_limit:
+                self.nearly_done = True
+            self.epoch += 1
+
+        return self.epoch, MSE
+
+    def save_network_in_dictionary(self):
+        links = self.get_links()  # need this to be called before "self.no_links" -- need to CLEAN this smell!
+        return {
+            "n_inputs"              : self.n_inputs,
+            "n_outputs"             : self.n_outputs,
+            "n_neurons_for_each_layer"             : self.n_neurons_for_each_layer,
+            "n_hidden_layers"         : self.n_hidden_layers,
+            "hidden_layers_present"  : self.hidden_layers_present,
+            "neurons_ios"            : self.neurons_ios,
+            "weight_init_functions"     : self.weight_init_functions,
+            "learning_rate_functions"   : self.learning_rate_functions,
+            "n_links"               : self.n_links,
+            "links"                 : links
+        }
+
+    def save_to_file(self, filename = "network.pkl" ):
+        import cPickle
+        network_saved_dict = self.save_network_in_dictionary()
+        with open( filename , 'wb') as afile:
+            cPickle.dump( network_saved_dict, afile, 2 )
+
+
+    # @staticmethod
+    # def load_from_file( filename = "network.pkl" ):
+    #     """
+    #     Load the complete configuration of a previously stored network.
+    #     """
+    #     network = NeuralNet( 0, 0, 0, 0, [0,0], [0,0], [0,0])
+    #
+    #     with open( filename , 'rb') as afile:
+    #         import cPickle
+    #         store_dict = cPickle.load(afile)
+    #
+    #         n_inputs             = store_dict["n_inputs"]
+    #         n_outputs            = store_dict["n_outputs"]
+    #         n_hiddens            = store_dict["n_hiddens"]
+    #         n_hidden_layers      = store_dict["n_hidden_layers"]
+    #         neurons_ios = store_dict["neurons_ios"]
+    #         weight_init_functions = store_dict["weight_init_functions"]
+    #         learning_rate_functions = store_dict["learning_rate_functions"]
+    #
+    #     network = NeuralNet(n_inputs, n_outputs, n_hiddens, n_hidden_layers, neurons_ios, weight_init_functions, learning_rate_functions)
+    #     network.set_links( store_dict["links"] )
+    #     return network
+
+
+    def __str__(self):
+        return '\n'.join([str(i)+' '+str(layer) for i, layer in enumerate(self.layers)])
+
+
 class NetworkDataCollector:
     def __init__(self, network, data_collection_interval=1):
         self.network = network
@@ -81,7 +305,6 @@ class NetworkDataCollector:
         weight_series.index.names = ['epochs','neuron_num','weight_num']
         return weight_series
 
-
 class Instance:
     def __init__(self, features, targets):
         self.features = features
@@ -99,12 +322,31 @@ class Link:
     def set_source_neuron(self, source_neuron):
         self.source_neuron = source_neuron
 
+    def calc_links_ouput(self):
+        return self.weight * self.source_neuron.output
+
     def adapt_link_weight(self, error_at_input, learning_rate_function):
         delta_w = learning_rate_function() * error_at_input * self.source_neuron.output
         self.weight += delta_w
 
     def __str__(self):
         return str(self.weight)
+
+class LinkMemory(Link):
+    def __init__(self, weight_init_function, network):
+        Link.__init__(self, weight_init_function)
+        self.input_queue = deque([0.5]*(network.n_training_examples))
+        self.delayed_output = None
+
+    def calc_links_output(self):
+        self.input_queue.append(self.source_neuron.output)
+        self.delayed_output = self.input_queue.popleft()
+        return self.weight * self.delayed_output
+
+    def adapt_link_weight(self, error_at_input, learning_rate_function):
+        delta_w = learning_rate_function() * error_at_input * self.delayed_output
+        self.weight += delta_w
+
 
 
 class HiddenNeuron:
@@ -126,7 +368,7 @@ class HiddenNeuron:
     def calc_neurons_output(self):
         self.netinput = 0.0
         for link in self.links:
-           self.netinput += link.weight * link.source_neuron.output
+           self.netinput += link.calc_links_ouput()
         self.output = self.activation_function.io( self.netinput )
         return self.output
 
@@ -242,229 +484,6 @@ class OutputNeuronLayer:
     def __str__(self):
         return 'Layer for Output:\n\t'+'\n\t'.join([str(neuron) for neuron in self.neurons])+''
 
-
-class NeuralNet:
-    def __init__(self, n_neurons_for_each_layer, neurons_ios, weight_init_functions, learning_rate_functions):
-
-        self.n_neurons_for_each_layer = n_neurons_for_each_layer
-        self.n_inputs = n_neurons_for_each_layer[0]
-        self.n_outputs = n_neurons_for_each_layer[-1]
-        self.n_hidden_layers = 0
-        self.hidden_layers_present = False
-        if len(n_neurons_for_each_layer) > 2:
-            self.n_hidden_layers = len(n_neurons_for_each_layer) - 2
-            self.hidden_layers_present = True
-
-        self.layers = []
-        self.upper_layers = None
-        self.lower_layers = None
-        self.upper_layers_in_reverse_order =  None
-        self.lower_layers_in_reverse_order =  None
-
-        self.neurons_ios = neurons_ios
-        self.weight_init_functions = weight_init_functions
-        self.learning_rate_functions = learning_rate_functions
-
-        self.epoch = None
-        self.example_number = None
-        self.inputs_for_training_example = None
-        self.not_done = True
-        self.nearly_done = False
-
-        # Do not touch
-        self._create_network()
-        self._n_links = None
-
-    def _create_network(self):
-        # modified to create a wider range of networks, inclucing Elman-type networks...
-
-        # create input layer; i represents the 'current' layer number
-        i = 0
-        self.layers.append( InputNeuronLayer( i, self) )
-
-        if self.hidden_layers_present:
-        # create hidden layers
-            for ii in range(1, (self.n_hidden_layers + 1)):
-                self.layers.append(HiddenNeuronLayer(ii, self))
-
-        # create output layer
-        i = self.n_hidden_layers + 1
-        self.layers.append( OutputNeuronLayer( i, self) )
-
-        self.upper_layers = [aLayer for aLayer in self.layers[1:] ]
-        self.lower_layers = [aLayer for aLayer in self.layers[:-1]]
-        # Make subsequent backward error propagation code easier to write/understand!
-        self.upper_layers_in_reverse_order =  [aLayer for aLayer in reversed(self.layers[1:])]
-        self.lower_layers_in_reverse_order =  [aLayer for aLayer in reversed(self.layers[:-1])]
-
-        # connect layers and... (depending on specific architecture, e.g. Elman arch)
-        for lower_layer, upper_layer in zip(self.lower_layers, self.upper_layers):
-            connect_to_next_layer(lower_layer, upper_layer)
-
-        #TODO  add code here or above previous block: ... to add links from 1st hidden layer to Elman neurons in input layer (the '0th layer').
-
-    def get_links(self):
-        links = []
-        for layer in self.layers:
-            for neuron in layer.learning_neurons:
-                links += neuron.links
-        return links
-
-    @property
-    def n_links(self):
-        if not self._n_links:
-            self._n_links = len(self.get_links())
-        return self._n_links
-
-    def set_links(self, links):
-        stop = 0
-        for layer in self.layers:
-            for neuron in layer.learning_neurons:
-                start, stop = stop, (stop + len(neuron.links))
-                neuron.links = links[start:stop] 
-        return self
- 
-    def calc_networks_output(self):
-        for layer in self.layers:
-            for neuron in layer.neurons_wo_bias_neuron:
-                neuron.calc_neurons_output()
-        return [neuron.output for neuron in self.layers[-1].neurons ]
-
-        
-    def calc_output_neurons_errors(self, network_outputs, training_targets):
-        # determine error at network's output
-        errors = [ (aNetOutput - aTrainingTarget) for aNetOutput, aTrainingTarget in zip(network_outputs, training_targets) ]
-        # then calc & store errors in output neurons
-        output_neurons = self.layers[-1].neurons
-        for output_neuron, error in zip(output_neurons, errors):
-            output_neuron.error = error
-            output_neuron.calc_neurons_input_error()
-        return errors
-        
-    def calc_other_neurons_errors(self):
-        for lower_layer, upper_layer in zip(self.lower_layers_in_reverse_order, self.upper_layers_in_reverse_order):     
-            for neuron in lower_layer.learning_neurons:   #.learning_neurons.. We don't need to calculate bias neuron's error!!
-                neuron.calc_neurons_error(upper_layer)
-
-    def change_first_upper_layer_links(self, inputs_to_layer):
-        # The first hidden layer receives its inputs externally, not from lower layer neurons
-        for neuron in self.layers[1].learning_neurons:
-            neuron.adapt_weights_in_links()
-
-    def adapt_all_layers(self):
-        # self.change_input_layer_links()
-        for layer in self.layers:
-            for neuron in layer.learning_neurons:
-                neuron.adapt_weights_in_links()
-
-
-    #TODO needs to be modified for true Elman
-    # def change_input_layer_links(self):
-    #     lower_layer_neuron_outputs = [neuron.output for neuron in self.layers[0].neurons]
-    #     for neuron in self.layers[0].learning_neurons:
-    #         neuron.adapt_weights_in_links()
-
-    # #TODO This assumes a 1-to-1 Elman recurrent connections
-    # def change_input_layer_links(self):
-    #     for ff_neuron, elman_neuron in zip(self.layers[0].ff_neurons:
-    #
-    #         neuron.change_links(ff_neuron.output)
-    #
-    #     lower_layer_neuron_outputs = [neuron.output for neuron in self.layers[0].ff_neurons]
-    #     for neuron in self.layers[0].learning_neurons:
-    #             neuron.change_links(lower_layer_neuron_outputs)
-    #
-
-    def backpropagation(self, training_set, error_limit, max_epochs, data_collector):
-        n_training_examples = len(training_set)
-        training_inputs  =  [instance.features for instance in training_set]
-        training_targets =  [instance.targets for instance in training_set]
-        
-        MSE      = 1000.0 # any large enough number is good enough!      
-        self.epoch = 0
-        self.not_done = True
-        self.nearly_done = False
-        
-        # epoch loop
-        while self.not_done:
-        
-            if self.epoch > max_epochs:
-                self.nearly_done = True
-                return self.epoch, MSE
-                
-            collected_output_errors = []
-            
-            # 1-training-example per iteration
-            for example_number, inputs_for_training_example in enumerate(training_inputs):
-                
-                self.example_number = example_number
-                self.inputs_for_training_example = inputs_for_training_example
-                # print "\n\nNetwork State just before net outputs calculated\n", self
-                network_outputs = self.calc_networks_output()
-                collected_output_errors += self.calc_output_neurons_errors(network_outputs, training_targets[example_number])
-                self.calc_other_neurons_errors()
-                self.adapt_all_layers()
-
-                data_collector.store(self.epoch, example_number)
-            
-            sse = np.dot(collected_output_errors, collected_output_errors)
-            MSE = sse / (self.n_outputs * n_training_examples)
-            if self.nearly_done:
-                self.not_done = False
-            if MSE < error_limit:
-                self.nearly_done = True
-            self.epoch += 1
-        
-        return self.epoch, MSE
-            
-    def save_network_in_dictionary(self):
-        links = self.get_links()  # need this to be called before "self.no_links" -- need to CLEAN this smell!
-        return {
-            "n_inputs"              : self.n_inputs,
-            "n_outputs"             : self.n_outputs,
-            "n_neurons_for_each_layer"             : self.n_neurons_for_each_layer,
-            "n_hidden_layers"         : self.n_hidden_layers,
-            "hidden_layers_present"  : self.hidden_layers_present,
-            "neurons_ios"            : self.neurons_ios,
-            "weight_init_functions"     : self.weight_init_functions,
-            "learning_rate_functions"   : self.learning_rate_functions,
-            "n_links"               : self.n_links,
-            "links"                 : links
-        }
-    
-    def save_to_file(self, filename = "network.pkl" ):
-        import cPickle
-        network_saved_dict = self.save_network_in_dictionary()
-        with open( filename , 'wb') as afile:
-            cPickle.dump( network_saved_dict, afile, 2 )
-
-
-    # @staticmethod
-    # def load_from_file( filename = "network.pkl" ):
-    #     """
-    #     Load the complete configuration of a previously stored network.
-    #     """
-    #     network = NeuralNet( 0, 0, 0, 0, [0,0], [0,0], [0,0])
-    #
-    #     with open( filename , 'rb') as afile:
-    #         import cPickle
-    #         store_dict = cPickle.load(afile)
-    #
-    #         n_inputs             = store_dict["n_inputs"]
-    #         n_outputs            = store_dict["n_outputs"]
-    #         n_hiddens            = store_dict["n_hiddens"]
-    #         n_hidden_layers      = store_dict["n_hidden_layers"]
-    #         neurons_ios = store_dict["neurons_ios"]
-    #         weight_init_functions = store_dict["weight_init_functions"]
-    #         learning_rate_functions = store_dict["learning_rate_functions"]
-    #
-    #     network = NeuralNet(n_inputs, n_outputs, n_hiddens, n_hidden_layers, neurons_ios, weight_init_functions, learning_rate_functions)
-    #     network.set_links( store_dict["links"] )
-    #     return network
-
-
-    def __str__(self):
-        return '\n'.join([str(i)+' '+str(layer) for i, layer in enumerate(self.layers)])
 
 
 # NOTES:
