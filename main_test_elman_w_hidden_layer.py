@@ -43,7 +43,7 @@ for seed_value in range(10):
     random.seed(seed_value)
         
     # initialize the neural network
-    network = NeuralNet(n_neurons_for_each_layer, neurons_ios, weight_init_functions, learning_rate_functions)
+    network = NeuralNet(n_neurons_for_each_layer, neurons_ios, weight_init_functions, learning_rate_functions, n_delays=4)
 
     #print "\n\nNetwork State just after creation\n", network
     

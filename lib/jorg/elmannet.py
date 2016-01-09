@@ -27,6 +27,15 @@ def connect_to_next_layer(lower_layer, upper_layer):
             a_link.set_source_neuron(lower_neuron)
             lower_neuron.output_links.append(a_link)
 
+# def connect_within_layer(layer):
+#     for neuron in layer.learning_neurons:
+#         for
+#
+#             a_link = neuron.links.append(LinkMemory(weight_init_function_random, network))
+#             a_link.set_source_neuron(lower_neuron)
+#             lower_neuron.output_links.append(a_link)
+
+
 def intermediate_post_process(trial_params, data_collector, dfs_concatenated):
     weight_series = data_collector.extract_weights(layer_number=1)
     
@@ -49,7 +58,7 @@ def intermediate_post_process(trial_params, data_collector, dfs_concatenated):
     return dfs_concatenated
 
 class NeuralNet:
-    def __init__(self, n_neurons_for_each_layer, neurons_ios, weight_init_functions, learning_rate_functions):
+    def __init__(self, n_neurons_for_each_layer, neurons_ios, weight_init_functions, learning_rate_functions, n_delays):
 
         self.n_neurons_for_each_layer = n_neurons_for_each_layer
         self.n_inputs = n_neurons_for_each_layer[0]
@@ -77,6 +86,9 @@ class NeuralNet:
         self.inputs_for_training_example = None
         self.not_done = True
         self.nearly_done = False
+
+        # Elman delay...
+        self.n_delays = n_delays
 
         # Do not touch
         self._create_network()
@@ -109,6 +121,8 @@ class NeuralNet:
             connect_to_next_layer(lower_layer, upper_layer)
 
         #TODO  add code here or above previous block: ... to add links from 1st hidden layer to Elman neurons in input layer (the '0th layer').
+
+
 
     def get_links(self):
         links = []
@@ -314,18 +328,19 @@ class Instance:
         return 'Features: %s, Targets: %s' % ( str(self.features), str(self.targets) )
 
 class Link:
-    def __init__(self, weight_init_function):
+    def __init__(self, weight_init_function, network):
         self.weight_init_function = weight_init_function
+        self.network = network
         self.weight = self.weight_init_function()
         self.source_neuron = None
 
     def set_source_neuron(self, source_neuron):
         self.source_neuron = source_neuron
 
-    def calc_links_ouput(self):
+    def calc_links_output(self):
         return self.weight * self.source_neuron.output
 
-    def adapt_link_weight(self, error_at_input, learning_rate_function):
+    def adapt_links_weight(self, error_at_input, learning_rate_function):
         delta_w = learning_rate_function() * error_at_input * self.source_neuron.output
         self.weight += delta_w
 
@@ -334,65 +349,19 @@ class Link:
 
 class LinkMemory(Link):
     def __init__(self, weight_init_function, network):
-        Link.__init__(self, weight_init_function)
-        self.input_queue = deque([0.5]*(network.n_training_examples))
-        self.delayed_output = None
+        Link.__init__(self, weight_init_function, network)
+        self.input_queue = deque([0.5]*(network.n_delays))
+        self.delayed_input = None
 
     def calc_links_output(self):
         self.input_queue.append(self.source_neuron.output)
-        self.delayed_output = self.input_queue.popleft()
-        return self.weight * self.delayed_output
+        self.delayed_input = self.input_queue.popleft()
+        return self.weight * self.delayed_input
 
-    def adapt_link_weight(self, error_at_input, learning_rate_function):
-        delta_w = learning_rate_function() * error_at_input * self.delayed_output
+    def adapt_links_weight(self, error_at_input, learning_rate_function):
+        delta_w = learning_rate_function() * error_at_input * self.delayed_input
         self.weight += delta_w
 
-
-
-class HiddenNeuron:
-    def __init__(self, neuron_id, n_inputs, network, activation_function, weight_init_function, learning_rate_function):
-        self.neuron_id = neuron_id
-        self.neuron_number = neuron_id[1]
-        self.n_inputs = n_inputs
-        self.network = network
-        self.links = [ Link(weight_init_function) for _ in range(0, n_inputs+1)]  # +1 for bias link
-        self.output_links = []
-        self.activation_function = activation_function
-        self.weight_init_function = weight_init_function
-        self.learning_rate_function = learning_rate_function
-        self.error = None
-        self.error_at_input = None
-        self.netinput = None
-        self.output = None
-
-    def calc_neurons_output(self):
-        self.netinput = 0.0
-        for link in self.links:
-           self.netinput += link.calc_links_ouput()
-        self.output = self.activation_function.io( self.netinput )
-        return self.output
-
-    def calc_neurons_error(self, upper_layer):
-        upper_layer_input_errors = [neuron.error_at_input for neuron in upper_layer.learning_neurons]
-        self.error = np.dot(upper_layer_input_errors, [link.weight for link in self.output_links])
-        self.calc_neurons_input_error()
-        
-    def calc_neurons_input_error(self):
-        self.error_at_input  = self.error * self.activation_function.io_derivative( self.netinput, self.output)
-        
-    def adapt_weights_in_links(self):
-        for link in self.links:
-            link.adapt_link_weight(self.error_at_input, self.learning_rate_function)
-
-    def __str__(self):
-        weights = [link.weight for link in self.links]
-        return 'Neuron Weights: %s  Net Input: %s  Output: %s' % (str(weights), str(self.netinput),  str(self.output))
- 
- 
-class OutputNeuron(HiddenNeuron):
-    def __init__(self, neuron_id, n_inputs, network, activation_function, weight_init_function, learning_rate_function):
-        HiddenNeuron.__init__(self, neuron_id, n_inputs, network, activation_function, weight_init_function, learning_rate_function)
-        self.output_links = None
 
 class BiasNeuron:
     def __init__(self):
@@ -402,7 +371,8 @@ class BiasNeuron:
 
     def __str__(self):
         return 'BiasNeuron, Output = ' + str(self.output)
-        
+
+
 class InputNeuron:
     def __init__(self, neuron_id, network):
         self.neuron_id = neuron_id
@@ -418,6 +388,52 @@ class InputNeuron:
 
     def __str__(self):
         return 'NeuronForInput, Output = ' + str(self.output)
+
+
+class HiddenNeuron:
+    def __init__(self, neuron_id, n_inputs, network, activation_function, weight_init_function, learning_rate_function):
+        self.neuron_id = neuron_id
+        self.neuron_number = neuron_id[1]
+        self.n_inputs = n_inputs
+        self.network = network
+        self.links = [LinkMemory(weight_init_function, network) for _ in range(0, n_inputs + 1)]  # +1 for bias link
+        self.output_links = []
+        self.activation_function = activation_function
+        self.weight_init_function = weight_init_function
+        self.learning_rate_function = learning_rate_function
+        self.error = None
+        self.error_at_input = None
+        self.netinput = None
+        self.output = None
+
+    def calc_neurons_output(self):
+        self.netinput = 0.0
+        for link in self.links:
+           self.netinput += link.calc_links_output()
+        self.output = self.activation_function.io( self.netinput )
+        return self.output
+
+    def calc_neurons_error(self, upper_layer):
+        upper_layer_input_errors = [neuron.error_at_input for neuron in upper_layer.learning_neurons]
+        self.error = np.dot(upper_layer_input_errors, [link.weight for link in self.output_links])
+        self.calc_neurons_input_error()
+        
+    def calc_neurons_input_error(self):
+        self.error_at_input  = self.error * self.activation_function.io_derivative( self.netinput, self.output)
+        
+    def adapt_weights_in_links(self):
+        for link in self.links:
+            link.adapt_links_weight(self.error_at_input, self.learning_rate_function)
+
+    def __str__(self):
+        weights = [link.weight for link in self.links]
+        return 'Neuron Weights: %s  Net Input: %s  Output: %s' % (str(weights), str(self.netinput),  str(self.output))
+ 
+ 
+class OutputNeuron(HiddenNeuron):
+    def __init__(self, neuron_id, n_inputs, network, activation_function, weight_init_function, learning_rate_function):
+        HiddenNeuron.__init__(self, neuron_id, n_inputs, network, activation_function, weight_init_function, learning_rate_function)
+        self.output_links = None
 
 
 class NeuronElman:
