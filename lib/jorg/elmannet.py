@@ -12,29 +12,35 @@ import numpy as np
 import pandas as pd
 from pandas import Series, DataFrame
 
-from jorg.activation_classes import LinearIO
+#from jorg.activation_classes import LinearIO
 
 def weight_init_function_random():
     return random.uniform(-0.5,0.5)
-    
+
+# def weight_init_function_random():
+#     value = random.uniform(-0.5,0.5)
+#     print value
+#     return value
+
 def learning_rate_function():
     return -1.0
 
 def connect_to_next_layer(lower_layer, upper_layer):
-    for i, lower_neuron in enumerate(lower_layer.neurons):
-        for upper_neuron in upper_layer.learning_neurons:
-            a_link = upper_neuron.links[i]
+    for upper_neuron in upper_layer.learning_neurons:
+        for lower_neuron in lower_layer.neurons:
+            a_link = Link(upper_neuron.weight_init_function, upper_neuron.network)
+            upper_neuron.links.append(a_link)
             a_link.set_source_neuron(lower_neuron)
             lower_neuron.output_links.append(a_link)
 
-# def connect_within_layer(layer):
-#     for neuron in layer.learning_neurons:
-#         for
-#
-#             a_link = neuron.links.append(LinkMemory(weight_init_function_random, network))
-#             a_link.set_source_neuron(lower_neuron)
-#             lower_neuron.output_links.append(a_link)
-
+def connect_within_layer(layer):
+    for neuron in layer.learning_neurons:
+        other_learning_neurons_in_layer = layer.learning_neurons - neuron
+        for another_neuron in other_learning_neurons_in_layer:
+            a_link = Link(neuron.weight_init_function, neuron.network)
+            neuron.links.append(a_link)
+            a_link.set_source_neuron(another_neuron)
+            another_neuron.output_links.append(a_link)
 
 def intermediate_post_process(trial_params, data_collector, dfs_concatenated):
     weight_series = data_collector.extract_weights(layer_number=1)
@@ -372,7 +378,6 @@ class BiasNeuron:
     def __str__(self):
         return 'BiasNeuron, Output = ' + str(self.output)
 
-
 class InputNeuron:
     def __init__(self, neuron_id, network):
         self.neuron_id = neuron_id
@@ -396,7 +401,8 @@ class HiddenNeuron:
         self.neuron_number = neuron_id[1]
         self.n_inputs = n_inputs
         self.network = network
-        self.links = [LinkMemory(weight_init_function, network) for _ in range(0, n_inputs + 1)]  # +1 for bias link
+        self.links = []
+        #self.links = [Link(weight_init_function, network) for _ in range(0, n_inputs + 1)]  # +1 for bias link
         self.output_links = []
         self.activation_function = activation_function
         self.weight_init_function = weight_init_function
