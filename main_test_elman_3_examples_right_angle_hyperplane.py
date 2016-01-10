@@ -62,10 +62,11 @@ for seed_value in range(10):
     dfs_concatenated = intermediate_post_process(seed_value, data_collector, dfs_concatenated)
 
     # print out the result
-    for instance in training_set:
+    for example_number, example in enumerate(training_set):
+        inputs_for_training_example = example.features
+        network.inputs_for_training_example = inputs_for_training_example
         output_from_network = network.calc_networks_output()
-        input_to_neuron = network.layers[1].neurons[0].netinput
-        print instance.features, "\tneurons input:", input_to_neuron, "\tnetworks output:", output_from_network, "\ttarget:", instance.targets
+        print "\tnetworks input:", example.features, "\tnetworks output:", output_from_network, "\ttarget:", example.targets
     
 print results
 print
