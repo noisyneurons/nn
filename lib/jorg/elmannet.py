@@ -26,17 +26,26 @@ def connect_upper_layer_to_lower(lower_layer, upper_layer):
             a_link.set_source_neuron(lower_neuron)
             lower_neuron.output_links.append(a_link)
 
+# def connect_within_layer(layer):
+#     for neuron in layer.learning_neurons:
+#         other_learning_neurons_in_layer = copy(layer.learning_neurons)
+#         other_learning_neurons_in_layer.remove(neuron)
+#         for another_neuron in other_learning_neurons_in_layer:
+#             a_link = LinkMemory(neuron.weight_init_function, neuron.network)
+#             neuron.links.append(a_link)
+#             a_link.set_source_neuron(another_neuron)
+#             another_neuron.output_links.append(a_link)
+
 def connect_within_layer(layer):
     for neuron in layer.learning_neurons:
         other_learning_neurons_in_layer = copy(layer.learning_neurons)
-        print other_learning_neurons_in_layer
         other_learning_neurons_in_layer.remove(neuron)
-        print other_learning_neurons_in_layer
         for another_neuron in other_learning_neurons_in_layer:
             a_link = LinkMemory(neuron.weight_init_function, neuron.network)
             neuron.links.append(a_link)
             a_link.set_source_neuron(another_neuron)
-            another_neuron.output_links.append(a_link)
+            # another_neuron.output_links.append(a_link)
+
 
 # for one example:
 def error_func(network_outputs, training_targets):
