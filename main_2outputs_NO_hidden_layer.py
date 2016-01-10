@@ -1,14 +1,8 @@
-# main_test_elman_w_hidden_layer.py
-# main_sop_hidden_layer_learning_stats.py   XOR target function
-# test/retest program results --> to benchmark other versions of the code...
-#
-# results= [1235, 971, 935, 927, 824, 820, 780, 1088, 732, 1034]
-#
-# 931.0
+# main_2outputs_NO_hidden_layer.py
 
 from __future__ import division
 import math, random
-import numpy as np
+import numpy as np   
 
 from jorg.elmannet import \
 NeuralNet, Instance, NetworkDataCollector, weight_init_function_random, learning_rate_function
@@ -17,13 +11,17 @@ from jorg.activation_classes import SigmoidIO, LinearIO, GaussGauss, Gauss, STDN
 
 def learning_rate_function():
     return -1.0
+   
+def experimental_weight_setting_function(network):
+    pass
 
-# "XOR" training set
-training_set = [ Instance( [0.0, 0.0], [0.0] ), Instance( [0.0, 1.0], [1.0] ), Instance( [1.0, 0.0], [1.0] ), Instance( [1.0, 1.0], [0.0] ) ]
+# "OR" training set
+# training_set = [ Instance( [0.0, 0.0], [0.0, None] ), Instance( [0.0, 1.0], [1.0, None] ), Instance( [1.0, 0.0], [1.0, None] ), Instance( [1.0, 1.0], [1.0, None] ) ]
+training_set = [ Instance( [0.0, 0.0], [0.0, 0.555] ), Instance( [0.0, 1.0], [1.0, 0.555] ), Instance( [1.0, 0.0], [1.0, 0.555] ), Instance( [1.0, 1.0], [1.0, 0.555] ) ]
 
 n_inputs = 2
-n_outputs = 1
-n_neurons_for_each_layer = [n_inputs, 3, n_outputs]
+n_outputs = 2
+n_neurons_for_each_layer = [n_inputs, n_outputs]
 
 n_hidden_layers = 0
 if len(n_neurons_for_each_layer) > 2:
@@ -44,7 +42,9 @@ for seed_value in range(10):
     # initialize the neural network
     network = NeuralNet(n_neurons_for_each_layer, neurons_ios, weight_init_functions, learning_rate_functions, n_delays=0)
 
-    #print "\n\nNetwork State just after creation\n", network
+    print "\n\nNetwork State just after creation\n", network
+
+    experimental_weight_setting_function(network)
     
     data_collection_interval = 1000
     data_collector = NetworkDataCollector(network, data_collection_interval)

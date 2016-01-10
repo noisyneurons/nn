@@ -12,15 +12,8 @@ import numpy as np
 import pandas as pd
 from pandas import Series, DataFrame
 
-#from jorg.activation_classes import LinearIO
-
 def weight_init_function_random():
     return random.uniform(-0.5,0.5)
-
-# def weight_init_function_random():
-#     value = random.uniform(-0.5,0.5)
-#     print value
-#     return value
 
 def learning_rate_function():
     return -1.0
@@ -41,6 +34,13 @@ def connect_within_layer(layer):
             neuron.links.append(a_link)
             a_link.set_source_neuron(another_neuron)
             another_neuron.output_links.append(a_link)
+
+
+def error_func(output, target):
+    #if target == 0.555:
+        #return 0.0
+    return output - target
+
 
 def intermediate_post_process(trial_params, data_collector, dfs_concatenated):
     weight_series = data_collector.extract_weights(layer_number=1)
@@ -151,6 +151,48 @@ class NeuralNet:
                 neuron.links = links[start:stop]
         return self
 
+    def backpropagation(self, training_set, error_limit, max_epochs, data_collector):
+        self.n_training_examples = len(training_set)
+        training_inputs  =  [instance.features for instance in training_set]
+        training_targets =  [instance.targets for instance in training_set]
+
+        MSE      = 1000.0 # any large enough number is good enough!
+        self.epoch = 0
+        self.not_done = True
+        self.nearly_done = False
+
+        # epoch loop
+        while self.not_done:
+
+            if self.epoch > max_epochs:
+                self.nearly_done = True
+                return self.epoch, MSE
+
+            collected_output_errors = []
+
+            # 1-training-example per iteration
+            for example_number, inputs_for_training_example in enumerate(training_inputs):
+
+                self.example_number = example_number
+                self.inputs_for_training_example = inputs_for_training_example
+                network_outputs = self.calc_networks_output()
+                collected_output_errors += self.calc_output_neurons_errors(network_outputs, training_targets[example_number])
+                self.calc_other_neurons_errors()
+                self.adapt_all_layers()
+
+                data_collector.store(self.epoch, example_number)
+
+            sse = np.dot(collected_output_errors, collected_output_errors)
+            MSE = sse / (self.n_outputs * self.n_training_examples)
+            if self.nearly_done:
+                self.not_done = False
+            if MSE < error_limit:
+                self.nearly_done = True
+            self.epoch += 1
+
+        return self.epoch, MSE
+
+
     def calc_networks_output(self):
         for layer in self.layers:
             for neuron in layer.neurons_wo_bias_neuron:
@@ -160,6 +202,7 @@ class NeuralNet:
 
     def calc_output_neurons_errors(self, network_outputs, training_targets):
         # determine error at network's output
+        # errors = [ error_func(aNetOutput, aTrainingTarget) for aNetOutput, aTrainingTarget in zip(network_outputs, training_targets) ]
         errors = [ (aNetOutput - aTrainingTarget) for aNetOutput, aTrainingTarget in zip(network_outputs, training_targets) ]
         # then calc & store errors in output neurons
         output_neurons = self.layers[-1].neurons
@@ -201,48 +244,6 @@ class NeuralNet:
     #     for neuron in self.layers[0].learning_neurons:
     #             neuron.change_links(lower_layer_neuron_outputs)
     #
-
-    def backpropagation(self, training_set, error_limit, max_epochs, data_collector):
-        self.n_training_examples = len(training_set)
-        training_inputs  =  [instance.features for instance in training_set]
-        training_targets =  [instance.targets for instance in training_set]
-
-        MSE      = 1000.0 # any large enough number is good enough!
-        self.epoch = 0
-        self.not_done = True
-        self.nearly_done = False
-
-        # epoch loop
-        while self.not_done:
-
-            if self.epoch > max_epochs:
-                self.nearly_done = True
-                return self.epoch, MSE
-
-            collected_output_errors = []
-
-            # 1-training-example per iteration
-            for example_number, inputs_for_training_example in enumerate(training_inputs):
-
-                self.example_number = example_number
-                self.inputs_for_training_example = inputs_for_training_example
-                # print "\n\nNetwork State just before net outputs calculated\n", self
-                network_outputs = self.calc_networks_output()
-                collected_output_errors += self.calc_output_neurons_errors(network_outputs, training_targets[example_number])
-                self.calc_other_neurons_errors()
-                self.adapt_all_layers()
-
-                data_collector.store(self.epoch, example_number)
-
-            sse = np.dot(collected_output_errors, collected_output_errors)
-            MSE = sse / (self.n_outputs * self.n_training_examples)
-            if self.nearly_done:
-                self.not_done = False
-            if MSE < error_limit:
-                self.nearly_done = True
-            self.epoch += 1
-
-        return self.epoch, MSE
 
     def save_network_in_dictionary(self):
         links = self.get_links()  # need this to be called before "self.no_links" -- need to CLEAN this smell!
