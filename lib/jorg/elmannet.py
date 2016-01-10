@@ -6,7 +6,7 @@ from __future__ import division
 import math
 import random
 from collections import defaultdict, deque
-from copy import deepcopy
+from copy import copy, deepcopy
 
 import numpy as np
 import pandas as pd
@@ -18,7 +18,7 @@ def weight_init_function_random():
 def learning_rate_function():
     return -1.0
 
-def connect_to_next_layer(lower_layer, upper_layer):
+def connect_upper_layer_to_lower(lower_layer, upper_layer):
     for upper_neuron in upper_layer.learning_neurons:
         for lower_neuron in lower_layer.neurons:
             a_link = Link(upper_neuron.weight_init_function, upper_neuron.network)
@@ -28,18 +28,24 @@ def connect_to_next_layer(lower_layer, upper_layer):
 
 def connect_within_layer(layer):
     for neuron in layer.learning_neurons:
-        other_learning_neurons_in_layer = layer.learning_neurons - neuron
+        other_learning_neurons_in_layer = copy(layer.learning_neurons)
+        print other_learning_neurons_in_layer
+        other_learning_neurons_in_layer.remove(neuron)
+        print other_learning_neurons_in_layer
         for another_neuron in other_learning_neurons_in_layer:
-            a_link = Link(neuron.weight_init_function, neuron.network)
+            a_link = LinkMemory(neuron.weight_init_function, neuron.network)
             neuron.links.append(a_link)
             a_link.set_source_neuron(another_neuron)
             another_neuron.output_links.append(a_link)
 
+# for one example:
+def error_func(network_outputs, training_targets):
+    #errors = [ (aNetOutput - aTrainingTarget) for aNetOutput, aTrainingTarget in zip(network_outputs, training_targets) ]
+    errors = [ (network_outputs[0] - training_targets[0]), (network_outputs[1] - training_targets[1])]
+    # errors = [ (network_outputs[0] - training_targets[0]), 0.0 ]
 
-def error_func(output, target):
-    #if target == 0.555:
-        #return 0.0
-    return output - target
+    # errors = [ (network_outputs[0] - training_targets[0]), 0.0]
+    return errors
 
 
 def intermediate_post_process(trial_params, data_collector, dfs_concatenated):
@@ -101,9 +107,10 @@ class NeuralNet:
         self._n_links = None
 
     def _create_network(self):
-        # modified to create a wider range of networks, inclucing Elman-type networks...
+        self.create_elman_network()
 
-        # create input layer; i represents the 'current' layer number
+    def create_sop_network(self):
+                # create input layer; i represents the 'current' layer number
         i = 0
         self.layers.append( InputNeuronLayer( i, self) )
 
@@ -124,10 +131,13 @@ class NeuralNet:
 
         # connect layers and... (depending on specific architecture, e.g. Elman arch)
         for lower_layer, upper_layer in zip(self.lower_layers, self.upper_layers):
-            connect_to_next_layer(lower_layer, upper_layer)
+            connect_upper_layer_to_lower(lower_layer, upper_layer)
 
-        #TODO  add code here or above previous block: ... to add links from 1st hidden layer to Elman neurons in input layer (the '0th layer').
 
+    def create_elman_network(self):
+        # modified to create a wider range of networks, inclucing Elman-type networks...
+        self.create_sop_network()
+        connect_within_layer(self.layers[1])
 
 
     def get_links(self):
@@ -202,8 +212,11 @@ class NeuralNet:
 
     def calc_output_neurons_errors(self, network_outputs, training_targets):
         # determine error at network's output
-        # errors = [ error_func(aNetOutput, aTrainingTarget) for aNetOutput, aTrainingTarget in zip(network_outputs, training_targets) ]
-        errors = [ (aNetOutput - aTrainingTarget) for aNetOutput, aTrainingTarget in zip(network_outputs, training_targets) ]
+
+        errors = error_func(network_outputs, training_targets)
+
+        #errors = [ error_func(aNetOutput, aTrainingTarget) for aNetOutput, aTrainingTarget in zip(network_outputs, training_targets) ]
+        # errors = [ (aNetOutput - aTrainingTarget) for aNetOutput, aTrainingTarget in zip(network_outputs, training_targets) ]
         # then calc & store errors in output neurons
         output_neurons = self.layers[-1].neurons
         for output_neuron, error in zip(output_neurons, errors):
@@ -358,6 +371,7 @@ class LinkMemory(Link):
     def __init__(self, weight_init_function, network):
         Link.__init__(self, weight_init_function, network)
         self.input_queue = deque([0.5]*(network.n_delays))
+        print  self.input_queue
         self.delayed_input = None
 
     def calc_links_output(self):
@@ -440,7 +454,7 @@ class HiddenNeuron:
 class OutputNeuron(HiddenNeuron):
     def __init__(self, neuron_id, n_inputs, network, activation_function, weight_init_function, learning_rate_function):
         HiddenNeuron.__init__(self, neuron_id, n_inputs, network, activation_function, weight_init_function, learning_rate_function)
-        self.output_links = None
+        #self.output_links = None
 
 
 class NeuronElman:

@@ -21,7 +21,7 @@ def experimental_weight_setting_function(network):
     pass
 
 # "OR" training set
-training_set = [ Instance( [0.0, 0.0], [0.0, 1.0] ), Instance( [0.0, 1.0], [1.0, 0.0] ), Instance( [1.0, 0.0], [1.0, 0.0] ), Instance( [1.0, 1.0], [1.0, 0.0] ) ]
+training_set = [ Instance( [0.0, 0.0], [0.0, 0.0] ), Instance( [0.0, 1.0], [1.0, 1.0] ), Instance( [1.0, 0.0], [1.0, 1.0] ), Instance( [1.0, 1.0], [1.0, 1.0] ) ]
 
 n_inputs = 2
 n_outputs = 2
@@ -44,7 +44,7 @@ for seed_value in range(10):
     random.seed(seed_value)
         
     # initialize the neural network
-    network = NeuralNet(n_neurons_for_each_layer, neurons_ios, weight_init_functions, learning_rate_functions, n_delays=0)
+    network = NeuralNet(n_neurons_for_each_layer, neurons_ios, weight_init_functions, learning_rate_functions, n_delays=4)
 
     print "\n\nNetwork State just after creation\n", network
 
