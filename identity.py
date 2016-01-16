@@ -1,4 +1,4 @@
-# main_test_neuralnet_v1_w_hidden_layer.py
+# identity.py
 # main_sop_hidden_layer_learning_stats.py   XOR target function
 # test/retest program results --> to benchmark other versions of the code...
 #
@@ -19,21 +19,22 @@ def learning_rate_function():
     return -1.0
 
 # "XOR" training set
-training_set = [ Instance( [0.0, 0.0], [0.0] ), Instance( [0.0, 1.0], [1.0] ), Instance( [1.0, 0.0], [1.0] ), Instance( [1.0, 1.0], [0.0] ) ]
+training_set = [ Instance( [0.0, 0.0], [0.0, 0.0] ), Instance( [0.0, 1.0], [0.0, 1.0] ), Instance( [1.0, 0.0], [0.0, 1.0] ), Instance( [1.0, 1.0], [1.0, 1.0] ) ]
 
 n_inputs = 2
-n_outputs = 1
-n_neurons_for_each_layer = [n_inputs, 3, n_outputs]
+n_outputs = 2
+n_neurons_for_each_layer = [n_inputs, 6, n_outputs]
 
 n_hidden_layers = 0
 if len(n_neurons_for_each_layer) > 2:
     n_hidden_layers = len(n_neurons_for_each_layer) - 2
 
 # specify neuron transforms, weight initialization, and learning rate functions... per layer eg: [ hidden_layer_1, hidden_layer_2, output_layer ]
-an_io_transform = SigmoidIO()
-neurons_ios = [None] + [ an_io_transform ]*n_hidden_layers + [ an_io_transform ] # [ SigmoidIO() ] #
-weight_init_functions = [ None ] + [ weight_init_function_random ]*n_hidden_layers + [ weight_init_function_random ]
-learning_rate_functions = [ None ] + [ learning_rate_function ]*n_hidden_layers + [ learning_rate_function ]
+sigmoid = SigmoidIO()
+linear = LinearIO()
+neurons_ios = [None] + [sigmoid] * n_hidden_layers + [sigmoid]
+weight_init_functions = [None] + [ weight_init_function_random ]*n_hidden_layers + [ weight_init_function_random ]
+learning_rate_functions = [None] + [ learning_rate_function ]*n_hidden_layers + [ learning_rate_function ]
 
 results = []
 
