@@ -2,12 +2,15 @@
 # run these test using pytest.py
 
 
-import math, random
+import math
+import random
+
 import numpy as np
-from linear_algebra import dot
 from jorg.neuralnet2 import Neuron, NeuralNet, Instance
-from jorg.activation_functions import sigmoid_function, tanh_function, linear_function,\
-                                 LReLU_function, ReLU_function, symmetric_elliot_function, elliot_function
+from linear_algebra import dot
+
+from old.activation_functions import sigmoid_function, linear_function
+
 
 def weight_init_function_random(sequence_num=0):
     return random.uniform(-0.5,0.5)

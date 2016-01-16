@@ -23,8 +23,7 @@ training_set = [ Instance( [0.0, 0.0], [0.0] ), Instance( [0.0, 1.0], [1.0] ), I
 
 n_inputs = 2
 n_outputs = 1
-n_hiddens = 3
-n_neurons_for_each_layer = [n_inputs, n_hiddens, n_outputs]
+n_neurons_for_each_layer = [n_inputs, 3, n_outputs]
 
 n_hidden_layers = 0
 if len(n_neurons_for_each_layer) > 2:
@@ -62,9 +61,11 @@ for seed_value in range(10):
     print "\n\nNetwork State after backpropagation\n", network, "\n"
 
     # print out the result
-    for instance in training_set:
+    for example_number, example in enumerate(training_set):
+        inputs_for_training_example = example.features
+        network.inputs_for_training_example = inputs_for_training_example
         output_from_network = network.calc_networks_output()
-        print "\tnetworks input:", instance.features, "\tnetworks output:", output_from_network, "\ttarget:", instance.targets
+        print "\tnetworks input:", example.features, "\tnetworks output:", output_from_network, "\ttarget:", example.targets
 
 print results
 print

@@ -26,37 +26,6 @@ def connect_upper_layer_to_lower(lower_layer, upper_layer):
             a_link.set_source_neuron(lower_neuron)
             lower_neuron.output_links.append(a_link)
 
-# def connect_within_layer(layer):
-#     for neuron in layer.learning_neurons:
-#         other_learning_neurons_in_layer = copy(layer.learning_neurons)
-#         other_learning_neurons_in_layer.remove(neuron)
-#         for another_neuron in other_learning_neurons_in_layer:
-#             a_link = LinkMemory(neuron.weight_init_function, neuron.network)
-#             neuron.links.append(a_link)
-#             a_link.set_source_neuron(another_neuron)
-#             another_neuron.output_links.append(a_link)
-
-def connect_within_layer(layer):
-    for neuron in layer.learning_neurons:
-        other_learning_neurons_in_layer = copy(layer.learning_neurons)
-        other_learning_neurons_in_layer.remove(neuron)
-        for another_neuron in other_learning_neurons_in_layer:
-            a_link = LinkMemory(neuron.weight_init_function, neuron.network)
-            neuron.links.append(a_link)
-            a_link.set_source_neuron(another_neuron)
-            # another_neuron.output_links.append(a_link)
-
-
-# for one example:
-def error_func(network_outputs, training_targets):
-    #errors = [ (aNetOutput - aTrainingTarget) for aNetOutput, aTrainingTarget in zip(network_outputs, training_targets) ]
-    errors = [ (network_outputs[0] - training_targets[0]), (network_outputs[1] - training_targets[1])]
-    # errors = [ (network_outputs[0] - training_targets[0]), 0.0 ]
-
-    # errors = [ (network_outputs[0] - training_targets[0]), 0.0]
-    return errors
-
-
 def intermediate_post_process(trial_params, data_collector, dfs_concatenated):
     weight_series = data_collector.extract_weights(layer_number=1)
     
