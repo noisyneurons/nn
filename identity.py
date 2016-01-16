@@ -38,7 +38,7 @@ learning_rate_functions = [None] + [ learning_rate_function ]*n_hidden_layers + 
 
 results = []
 
-for seed_value in range(10):
+for seed_value in range(5):
     print "seed = ", seed_value,
     random.seed(seed_value)
         
