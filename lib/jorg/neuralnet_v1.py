@@ -181,39 +181,6 @@ class NeuralNet:
                 neuron.links = links[start:stop]
         return self
 
-    def calc_networks_output(self):
-        for layer in self.layers:
-            for neuron in layer.neurons_wo_bias_neuron:
-                neuron.calc_neurons_output()
-        return [neuron.output for neuron in self.layers[-1].neurons ]
-
-
-    def calc_output_neurons_errors(self, network_outputs, training_targets):
-        # determine error at network's output
-        errors = [ (aNetOutput - aTrainingTarget) for aNetOutput, aTrainingTarget in zip(network_outputs, training_targets) ]
-        # then calc & store errors in output neurons
-        output_neurons = self.layers[-1].neurons
-        for output_neuron, error in zip(output_neurons, errors):
-            output_neuron.error = error
-            output_neuron.calc_neurons_input_error()
-        return errors
-
-    def calc_other_neurons_errors(self):
-        for lower_layer, upper_layer in zip(self.lower_layers_in_reverse_order, self.upper_layers_in_reverse_order):
-            for neuron in lower_layer.learning_neurons:   #.learning_neurons.. We don't need to calculate bias neuron's error!!
-                neuron.calc_neurons_error(upper_layer)
-
-    def change_first_upper_layer_links(self, inputs_to_layer):
-        # The first hidden layer receives its inputs externally, not from lower layer neurons
-        for neuron in self.layers[1].learning_neurons:
-            neuron.adapt_weights_in_links()
-
-    def adapt_all_layers(self):
-        # self.change_input_layer_links()
-        for layer in self.layers:
-            for neuron in layer.learning_neurons:
-                neuron.adapt_weights_in_links()
-
 
     def backpropagation(self, training_set, error_limit, max_epochs, data_collector):
         n_training_examples = len(training_set)
@@ -236,10 +203,8 @@ class NeuralNet:
 
             # 1-training-example per iteration
             for example_number, inputs_for_training_example in enumerate(training_inputs):
-
                 self.example_number = example_number
                 self.inputs_for_training_example = inputs_for_training_example
-                # print "\n\nNetwork State just before net outputs calculated\n", self
                 network_outputs = self.calc_networks_output()
                 collected_output_errors += self.calc_output_neurons_errors(network_outputs, training_targets[example_number])
                 self.calc_other_neurons_errors()
@@ -256,6 +221,42 @@ class NeuralNet:
             self.epoch += 1
 
         return self.epoch, MSE
+
+
+    def calc_networks_output(self):
+        for layer in self.layers:
+            for neuron in layer.neurons_wo_bias_neuron:
+                neuron.calc_neurons_output()
+        return [neuron.output for neuron in self.layers[-1].neurons ]
+
+
+    def calc_output_neurons_errors(self, network_outputs, training_targets):
+        # determine error at network's output
+        errors = [ (aNetOutput - aTrainingTarget) for aNetOutput, aTrainingTarget in zip(network_outputs, training_targets) ]
+        # then calc & store errors in output neurons
+        output_neurons = self.layers[-1].neurons
+        for output_neuron, error in zip(output_neurons, errors):
+            output_neuron.error = error
+            output_neuron.calc_neurons_input_error()
+        return errors
+
+
+    def calc_other_neurons_errors(self):
+        for lower_layer, upper_layer in zip(self.lower_layers_in_reverse_order, self.upper_layers_in_reverse_order):
+            for neuron in lower_layer.learning_neurons:   #.learning_neurons.. We don't need to calculate bias neuron's error!!
+                neuron.calc_neurons_error(upper_layer)
+
+    def change_first_upper_layer_links(self, inputs_to_layer):
+        # The first hidden layer receives its inputs externally, not from lower layer neurons
+        for neuron in self.layers[1].learning_neurons:
+            neuron.adapt_weights_in_links()
+
+    def adapt_all_layers(self):
+        # self.change_input_layer_links()
+        for layer in self.layers:
+            for neuron in layer.learning_neurons:
+                neuron.adapt_weights_in_links()
+
 
     def save_network_in_dictionary(self):
         links = self.get_links()  # need this to be called before "self.no_links" -- need to CLEAN this smell!

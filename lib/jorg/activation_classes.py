@@ -20,6 +20,13 @@ class LinearIO:
     def io_derivative(self, _, __):
         return 1.0
 
+class ConstantOutput:
+    def io(self, net_input):
+        return 0.5
+
+    def io_derivative(self, _, __):
+        return 0.0
+
 class Gauss:    
     def __init__(self, peak, std):    
         self.peak = peak

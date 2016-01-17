@@ -2,8 +2,10 @@
 from __future__ import division
 
 
-a_list = [1,2,3]
+a = [1,2,3]
+b = [2,4,6]
 
-
-new_list = [ element for element in a_list if element > 1]
-print  new_list
+for i, value_pair in enumerate(zip(a,b)):
+    print i
+    aval, bval = value_pair
+    print "aval=", aval, "bval=" ,  bval
