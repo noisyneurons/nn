@@ -66,7 +66,7 @@ learning_rate_functions = [None] + [ learning_rate_function ]*n_hidden_layers + 
 results = []
 dfs_concatenated = DataFrame([])
 
-for seed_value in range(10):
+for seed_value in range(3):
     print "seed = ", seed_value,
     random.seed(seed_value)
         
@@ -77,7 +77,8 @@ for seed_value in range(10):
     data_collector = NetworkDataCollector(network, data_collection_interval)
     
     # start training on test set one
-    epoch_and_MSE = network.backpropagation(training_set, 0.00001, 30000, data_collector)
+    max_epochs = 30000
+    epoch_and_MSE = network.backpropagation(training_set, 0.00001, max_epochs, data_collector)
     results.append(epoch_and_MSE[0])
 
     print "\n\nNet After Training\n", network
@@ -96,13 +97,15 @@ for seed_value in range(10):
         output_from_network = network.calc_networks_output()
         print "\tnetworks input:", example.features, "\tnetworks output:", output_from_network, "\ttarget:", example.targets
 
-
 print results
 print
 print np.median(results)
 print
 print dfs_concatenated
 print
+
+print "keys=\t", dfs_concatenated.keys()
+
 
 end_angle_values = dfs_concatenated["end"]["hyperplane_angle"]
 treatment_values = dfs_concatenated["treatment"]["hyperplane_angle"]

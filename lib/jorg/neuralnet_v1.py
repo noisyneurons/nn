@@ -44,14 +44,17 @@ class NetworkDataCollector:
         self.network = network
         self.data_dictionary = defaultdict(dict)
         self.data_collection_interval = data_collection_interval
-        
+
     def store(self, epoch, example_number):
-        if epoch%self.data_collection_interval == 0:
-            self.data_dictionary[epoch][example_number] = deepcopy(self.network)  #store the network
-            return
         if self.network.nearly_done:
-            self.data_dictionary["end"][example_number] = deepcopy(self.network)  #store the network
-       
+            self.data_dictionary["end"][example_number] = deepcopy(self.network)
+        if epoch%self.data_collection_interval == 0:
+            self.data_dictionary[epoch][example_number] = deepcopy(self.network)
+            return
+
+    # def store_at_max_epochs(self, epoch, example_number):
+    #     self.data_dictionary["end"][example_number] = deepcopy(self.network)
+    #
     def extract_weights(self, layer_number=0, example_number=0):
         weights = []
         epoch_idx = []
@@ -173,11 +176,6 @@ class NeuralNet:
 
         # epoch loop
         while self.not_done:
-
-            if self.epoch > max_epochs:
-                self.nearly_done = True
-                return self.epoch, MSE
-
             collected_output_errors = []
 
             # 1-training-example per iteration
@@ -188,7 +186,6 @@ class NeuralNet:
                 collected_output_errors += self.calc_output_neurons_errors(network_outputs, training_targets[example_number])
                 self.calc_other_neurons_errors()
                 self.adapt_all_layers()
-
                 data_collector.store(self.epoch, example_number)
 
             sse = np.dot(collected_output_errors, collected_output_errors)
@@ -196,6 +193,8 @@ class NeuralNet:
             if self.nearly_done:
                 self.not_done = False
             if MSE < error_limit:
+                self.nearly_done = True
+            if self.epoch > max_epochs:
                 self.nearly_done = True
             self.epoch += 1
 
