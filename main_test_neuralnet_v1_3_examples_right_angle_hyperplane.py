@@ -11,8 +11,7 @@ import matplotlib.pyplot as plt
 from pandas import Series, DataFrame
 import pandas as pd
 
-from jorg.neuralnet_v1 import NeuralNet, Instance, NetworkDataCollector, \
-intermediate_post_process, weight_init_function_random, learning_rate_function
+from jorg.neuralnet_v1 import NeuralNet, Instance, NetworkDataCollector, weight_init_function_random, learning_rate_function
 
 from jorg.activation_classes import STDNonMonotonicIOFunction
 
@@ -21,6 +20,28 @@ def learning_rate_function():
 
 def experimental_weight_setting_function(network):
     pass
+
+def intermediate_post_process(trial_params, data_collector, dfs_concatenated):
+    weight_series = data_collector.extract_weights(layer_number=1)
+
+    #print "weight_series =", weight_series
+    w0_series = weight_series[:,0,0]
+    w0_series.name = "weight0"
+    w1_series = weight_series[:,0,1]
+    w1_series.name = "weight1"
+
+    ratios = w0_series / w1_series
+    convert_to_angles_function = lambda x: 180.0 * math.atan(x) / math.pi
+    extracted_series = ratios.map(convert_to_angles_function)
+    extracted_series.name = "hyperplane_angle"
+
+    df = DataFrame([w0_series, w1_series, extracted_series])
+    #, columns=["weight0", "weight1", "hyperplane_angle", "epochs"] )
+    df["treatment"] = trial_params
+    dfs_concatenated = pd.concat([dfs_concatenated, df])
+
+    return dfs_concatenated
+
 
 # training set
 training_set = [ Instance( [0.0, 0.0], [0.0] ), Instance( [0.0, 1.0], [1.0] ), Instance( [1.0, 1.0], [1.0] ) ]
@@ -58,7 +79,7 @@ for seed_value in range(10):
     epoch_and_MSE = network.backpropagation(training_set, error_limit=0.0000001, max_epochs=6000, data_collector=data_collector)
 
     results.append(epoch_and_MSE[0])
-        
+
     dfs_concatenated = intermediate_post_process(seed_value, data_collector, dfs_concatenated)
 
     # print out the result

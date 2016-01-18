@@ -39,27 +39,6 @@ def connect_upper_layer_to_lower(lower_layer, upper_layer):
             lower_neuron.output_links.append(a_link)
 
 
-def intermediate_post_process(trial_params, data_collector, dfs_concatenated):
-    weight_series = data_collector.extract_weights(layer_number=1)
-    
-    #print "weight_series =", weight_series
-    w0_series = weight_series[:,0,0]
-    w0_series.name = "weight0"
-    w1_series = weight_series[:,0,1]
-    w1_series.name = "weight1"
-    
-    ratios = w0_series / w1_series
-    convert_to_angles_function = lambda x: 180.0 * math.atan(x) / math.pi
-    extracted_series = ratios.map(convert_to_angles_function)
-    extracted_series.name = "hyperplane_angle"
-    
-    df = DataFrame([w0_series, w1_series, extracted_series])
-    #, columns=["weight0", "weight1", "hyperplane_angle", "epochs"] )
-    df["treatment"] = trial_params
-    dfs_concatenated = pd.concat([dfs_concatenated, df])
-    
-    return dfs_concatenated
-
 class NetworkDataCollector:
     def __init__(self, network, data_collection_interval=1):
         self.network = network
