@@ -44,8 +44,14 @@ def intermediate_post_process(trial_params, data_collector, dfs_concatenated):
 
     return dfs_concatenated
 
+
 # "identity" training set
 training_set = [ Instance( [0.0, 0.0], [0.0, 0.0] ), Instance( [0.0, 1.0], [0.0, 1.0] ), Instance( [1.0, 0.0], [1.0, 0.0] ), Instance( [1.0, 1.0], [1.0, 1.0] ) ]
+
+# rotate 45 degrees clockwise!!
+for an_instance in training_set:
+    an_instance.rotate_clockwise_by(30)
+
 
 n_inputs = 2
 n_outputs = 2
@@ -59,14 +65,14 @@ nonmon = STDNonMonotonicIOFunction()
 
 # specify neuron transforms, weight initialization, and learning rate functions... per layer
 
-neurons_ios = [None] + [nonmon] * n_hidden_layers + [sigmoid]
+neurons_ios = [None] + [nonmon] * n_hidden_layers + [linear]
 weight_init_functions = [None] + [ weight_init_function_random ]*n_hidden_layers + [ weight_init_function_random ]
 learning_rate_functions = [None] + [ learning_rate_function ]*n_hidden_layers + [ learning_rate_function ]
 
 results = []
 dfs_concatenated = DataFrame([])
 
-for seed_value in range(3):
+for seed_value in range(20):
     print "seed = ", seed_value,
     random.seed(seed_value)
         
@@ -78,7 +84,8 @@ for seed_value in range(3):
     
     # start training on test set one
     max_epochs = 30000
-    epoch_and_MSE = network.backpropagation(training_set, 0.00001, max_epochs, data_collector)
+    epoch_and_MSE = network.backpropagation(training_set, 0.00001, max_epochs, data_collector)  # sop call
+    # epoch_and_MSE = network.backpropagation(training_set, 0.0000001, max_epochs, data_collector)
     results.append(epoch_and_MSE[0])
 
     print "\n\nNet After Training\n", network
@@ -103,9 +110,6 @@ print np.median(results)
 print
 print dfs_concatenated
 print
-
-print "keys=\t", dfs_concatenated.keys()
-
 
 end_angle_values = dfs_concatenated["end"]["hyperplane_angle"]
 treatment_values = dfs_concatenated["treatment"]["hyperplane_angle"]

@@ -50,11 +50,7 @@ class NetworkDataCollector:
             self.data_dictionary["end"][example_number] = deepcopy(self.network)
         if epoch%self.data_collection_interval == 0:
             self.data_dictionary[epoch][example_number] = deepcopy(self.network)
-            return
 
-    # def store_at_max_epochs(self, epoch, example_number):
-    #     self.data_dictionary["end"][example_number] = deepcopy(self.network)
-    #
     def extract_weights(self, layer_number=0, example_number=0):
         weights = []
         epoch_idx = []
@@ -76,9 +72,14 @@ class NetworkDataCollector:
 
 class Instance:
     def __init__(self, features, targets):
+
         self.features = features
         self.targets = targets
-        
+
+    def rotate_clockwise_by(self, degrees=0.0):
+        assert len(self.features) == 2
+        self.features = rotate_point(self.features, degrees)
+
     def __str__(self):
         return 'Features: %s, Targets: %s' % ( str(self.features), str(self.targets) )
 
@@ -108,7 +109,7 @@ class NeuralNet:
         self.epoch = None
         self.example_number = None
         self.inputs_for_training_example = None
-        self.not_done = True
+        self.still_learning = True
         self.nearly_done = False
 
         # Do not touch
@@ -169,13 +170,13 @@ class NeuralNet:
         training_inputs  =  [instance.features for instance in training_set]
         training_targets =  [instance.targets for instance in training_set]
 
-        MSE      = 1000.0 # any large enough number is good enough!
+        MSE = 1000.0 # any large number is good enough!
         self.epoch = 0
-        self.not_done = True
+        self.still_learning = True
         self.nearly_done = False
 
         # epoch loop
-        while self.not_done:
+        while self.still_learning:
             collected_output_errors = []
 
             # 1-training-example per iteration
@@ -191,7 +192,7 @@ class NeuralNet:
             sse = np.dot(collected_output_errors, collected_output_errors)
             MSE = sse / (self.n_outputs * n_training_examples)
             if self.nearly_done:
-                self.not_done = False
+                self.still_learning = False
             if MSE < error_limit:
                 self.nearly_done = True
             if self.epoch > max_epochs:
@@ -438,9 +439,24 @@ class OutputNeuronLayer:
     def __str__(self):
         return 'Layer for Output:\n\t'+'\n\t'.join([str(neuron) for neuron in self.neurons])+''
 
+# UTILITY Functions
+
+def rotate_point(point, theta):
+    theta = math.radians(theta)
+    return  [point[0]*math.cos(theta)-point[1]*math.sin(theta) , point[0]*math.sin(theta)+point[1]*math.cos(theta)]
 
 
 # NOTES:
+
+# def rotate_polygon(polygon,theta):
+#     """Rotates the given polygon which consists of corners represented as (x,y),
+#     around the ORIGIN, clock-wise, theta degrees"""
+#     theta = math.radians(theta)
+#     rotatedPolygon = []
+#     for corner in polygon :
+#         rotatedPolygon.append(( corner[0]*math.cos(theta)-corner[1]*math.sin(theta) , corner[0]*math.sin(theta)+corner[1]*math.cos(theta)) )
+#     return rotatedPolygon
+
 """
 
 class NeuralNet:
