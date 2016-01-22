@@ -56,12 +56,12 @@ class NetworkDataCollector:
         epoch_idx = []
         neuron_idx = []
         weight_idx = []
-        keys = self.data_dictionary.keys()
-        for key in keys:
-            net_snapshot = self.data_dictionary[key][example_number]
+        epochs = self.data_dictionary.keys()
+        for epoch in epochs:
+            net_snapshot = self.data_dictionary[epoch][example_number]
             for i_neuron, neuron in enumerate(net_snapshot.layers[layer_number].learning_neurons):
                 for i_weight, link in enumerate(neuron.links):
-                    epoch_idx.append(key)
+                    epoch_idx.append(epoch)
                     neuron_idx.append(i_neuron)
                     weight_idx.append(i_weight)
                     weights.append(link.weight)
@@ -76,7 +76,7 @@ class Instance:
         self.features = features
         self.targets = targets
 
-    def rotate_clockwise_by(self, degrees=0.0):
+    def rotate_by(self, degrees=0.0):
         assert len(self.features) == 2
         self.features = rotate_point(self.features, degrees)
 
@@ -442,7 +442,8 @@ class OutputNeuronLayer:
 # UTILITY Functions
 
 def rotate_point(point, theta):
-    theta = math.radians(theta)
+    counter_clockwise_degrees = -1.0 * theta
+    theta = math.radians(counter_clockwise_degrees)
     return  [point[0]*math.cos(theta)-point[1]*math.sin(theta) , point[0]*math.sin(theta)+point[1]*math.cos(theta)]
 
 
