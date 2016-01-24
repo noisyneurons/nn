@@ -1,4 +1,4 @@
-# identity.py
+# identity_netinputs_display.py
 # test/retest program results --> to benchmark other versions of the code...
 
 #TODO implement plot (or just simple display) of netinputs for all examples
@@ -19,22 +19,22 @@ from jorg.activation_classes import SigmoidIO, LinearIO, ConstantOutput, GaussGa
 n_hidden_neurons = 1
 learning_rate = -0.01
 rotation = 0.0
-n_trials = 10
-max_epochs = 10000
+n_trials = 2
+max_epochs = 3000
 error_criterion = 0.00001
 
 def learning_rate_function():
     return learning_rate
 
 def experiment_set_selected_weights(network):
-    # output_neurons = network.layers[2].neurons
-    # for output_neuron in output_neurons:
-    #     output_neuron.links[0].weight = 0.0
-    #     output_neuron.links[1].weight = 0.0
+    output_neurons = network.layers[2].neurons
+    for output_neuron in output_neurons:
+        output_neuron.links[0].weight = 0.0
+        output_neuron.links[1].weight = 0.0
 
     hidden_neurons = network.layers[1].neurons_wo_bias_neuron
     for hidden_neuron in hidden_neurons:
-        hidden_neuron.links[0].weight = 2.0
+        hidden_neuron.links[0].weight = 1.0
         hidden_neuron.links[1].weight = 0.0
 
 # "identity" training set
@@ -46,43 +46,16 @@ def calc_n_hidden_layers(n_neurons_for_each_layer):
         n_hidden_layers = len(n_neurons_for_each_layer) - 2
     return n_hidden_layers
 
-def intermediate_post_process_weights(trial_params, data_collector, dfs_concatenated):
-    weight_series = data_collector.extract_weights(layer_number=1)
-
-    #print "weight_series =", weight_series
-    w0_series = weight_series[:,0,0]
-    w0_series.name = "weight0"
-    w1_series = weight_series[:,0,1]
-    w1_series.name = "weight1"
-
-    ratios = w0_series / w1_series
-    convert_to_angles_function = lambda x: 180.0 * math.atan(x) / math.pi
-    extracted_series = ratios.map(convert_to_angles_function)
-    extracted_series.name = "hyperplane_angle"
-
-    df = DataFrame([w0_series, w1_series, extracted_series])
-    #, columns=["weight0", "weight1", "hyperplane_angle", "epochs"] )
-    df["treatment"] = trial_params
-    dfs_concatenated = pd.concat([dfs_concatenated, df])
-    return dfs_concatenated
 
 def intermediate_post_process_netinputs(trial_params, data_collector, dfs_concatenated):
-    weight_series = data_collector.extract_netinputs(layer_number=1)
+    netinput_series = data_collector.extract_netinputs(layer_number=1)
 
-    #print "weight_series =", weight_series
-    w0_series = weight_series[:,0,0]
-    w0_series.name = "weight0"
-    w1_series = weight_series[:,0,1]
-    w1_series.name = "weight1"
+    first_hidden_neuron_netinputs_series = netinput_series[:,0,:]
+    first_hidden_neuron_netinputs_series.name = "first_hidden_neuron_netinputs_series"
 
-    ratios = w0_series / w1_series
-    convert_to_angles_function = lambda x: 180.0 * math.atan(x) / math.pi
-    extracted_series = ratios.map(convert_to_angles_function)
-    extracted_series.name = "hyperplane_angle"
-
-    df = DataFrame([w0_series, w1_series, extracted_series])
+    df = DataFrame([first_hidden_neuron_netinputs_series])
     #, columns=["weight0", "weight1", "hyperplane_angle", "epochs"] )
-    df["treatment"] = trial_params
+    #df["treatment"] = trial_params
     dfs_concatenated = pd.concat([dfs_concatenated, df])
     return dfs_concatenated
 
@@ -133,7 +106,7 @@ for seed_value in range(n_trials):
     # load a stored network
     # network = NeuralNet.load_from_file( "trained_configuration.pkl" )
    
-    dfs_concatenated = intermediate_post_process_weights(seed_value, data_collector, dfs_concatenated)
+    dfs_concatenated = intermediate_post_process_netinputs(seed_value, data_collector, dfs_concatenated)
 
     # print out the result
     for example_number, example in enumerate(training_set):
@@ -149,14 +122,16 @@ print
 print dfs_concatenated
 print
 
-end_angle_values = dfs_concatenated["end"]["hyperplane_angle"]
-treatment_values = dfs_concatenated["treatment"]["hyperplane_angle"]
-list_of_dfs = [treatment_values] + [ (dfs_concatenated[epochs]["hyperplane_angle"]) for epochs in [0] ] + [end_angle_values]
-selected_df =  pd.concat( list_of_dfs, axis=1 )
+print dfs_concatenated["end"][0]
 
-print selected_df
-print type(selected_df)
+# end_netinputs = dfs_concatenated["end"]["first_hidden_neuron_netinputs_series"]
+# treatment_values = dfs_concatenated["treatment"]["first_hidden_neuron_netinputs_series"]
+# list_of_dfs = [treatment_values] + [ (dfs_concatenated[epochs]["first_hidden_neuron_netinputs_series"]) for epochs in [0] ] + [end_netinputs]
+# selected_df =  pd.concat( list_of_dfs, axis=1 )
+#
+# print selected_df
+# print type(selected_df)
 
-plt.scatter(selected_df["treatment"], selected_df["end"])
-#pd.scatter_matrix(selected_df, diagonal='kde', color='k', alpha=0.3)
-plt.show()
+# plt.scatter(selected_df["treatment"], selected_df["end"])
+# #pd.scatter_matrix(selected_df, diagonal='kde', color='k', alpha=0.3)
+# plt.show()

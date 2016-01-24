@@ -1,4 +1,4 @@
-# identity.py
+# identity_weights_display.py
 # test/retest program results --> to benchmark other versions of the code...
 
 #TODO implement plot (or just simple display) of netinputs for all examples
@@ -19,7 +19,7 @@ from jorg.activation_classes import SigmoidIO, LinearIO, ConstantOutput, GaussGa
 n_hidden_neurons = 1
 learning_rate = -0.01
 rotation = 0.0
-n_trials = 10
+n_trials = 3
 max_epochs = 10000
 error_criterion = 0.00001
 
@@ -48,26 +48,6 @@ def calc_n_hidden_layers(n_neurons_for_each_layer):
 
 def intermediate_post_process_weights(trial_params, data_collector, dfs_concatenated):
     weight_series = data_collector.extract_weights(layer_number=1)
-
-    #print "weight_series =", weight_series
-    w0_series = weight_series[:,0,0]
-    w0_series.name = "weight0"
-    w1_series = weight_series[:,0,1]
-    w1_series.name = "weight1"
-
-    ratios = w0_series / w1_series
-    convert_to_angles_function = lambda x: 180.0 * math.atan(x) / math.pi
-    extracted_series = ratios.map(convert_to_angles_function)
-    extracted_series.name = "hyperplane_angle"
-
-    df = DataFrame([w0_series, w1_series, extracted_series])
-    #, columns=["weight0", "weight1", "hyperplane_angle", "epochs"] )
-    df["treatment"] = trial_params
-    dfs_concatenated = pd.concat([dfs_concatenated, df])
-    return dfs_concatenated
-
-def intermediate_post_process_netinputs(trial_params, data_collector, dfs_concatenated):
-    weight_series = data_collector.extract_netinputs(layer_number=1)
 
     #print "weight_series =", weight_series
     w0_series = weight_series[:,0,0]

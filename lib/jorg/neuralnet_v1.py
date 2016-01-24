@@ -69,6 +69,26 @@ class NetworkDataCollector:
         weight_series.index.names = ['epochs','neuron_num','weight_num']
         return weight_series
 
+    def extract_netinputs(self, layer_number=0):
+        n_training_examples = self.network.n_training_examples
+
+        netinputs = []
+        epoch_idx = []
+        neuron_idx = []
+        example_num_idx = []
+        epochs = self.data_dictionary.keys()
+        for epoch in epochs:
+            for example_number in xrange(n_training_examples):
+                net_snapshot = self.data_dictionary[epoch][example_number]
+                for i_neuron, neuron in enumerate(net_snapshot.layers[layer_number].learning_neurons):
+                    epoch_idx.append(epoch)
+                    neuron_idx.append(i_neuron)
+                    example_num_idx.append(example_number)
+                    netinputs.append(neuron.netinput)
+        netinput_series = Series(netinputs, index=[epoch_idx, neuron_idx, example_num_idx])
+        netinput_series.index.names = ['epochs','neuron_num','example_num']
+        return netinput_series
+
 
 class Instance:
     def __init__(self, features, targets):
@@ -166,7 +186,7 @@ class NeuralNet:
 
 
     def backpropagation(self, training_set, error_limit, max_epochs, data_collector):
-        n_training_examples = len(training_set)
+        self.n_training_examples = len(training_set)
         training_inputs  =  [instance.features for instance in training_set]
         training_targets =  [instance.targets for instance in training_set]
 
@@ -190,7 +210,7 @@ class NeuralNet:
                 data_collector.store(self.epoch, example_number)
 
             sse = np.dot(collected_output_errors, collected_output_errors)
-            MSE = sse / (self.n_outputs * n_training_examples)
+            MSE = sse / (self.n_outputs * self.n_training_examples)
             if self.nearly_done:
                 self.still_learning = False
             if MSE < error_limit:
