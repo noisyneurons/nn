@@ -17,10 +17,10 @@ NeuralNet, Instance, NetworkDataCollector, weight_init_function_random, learning
 from jorg.activation_classes import SigmoidIO, LinearIO, ConstantOutput, GaussGauss, Gauss, STDNonMonotonicIOFunction
 
 n_hidden_neurons = 1
-learning_rate = -0.01
+learning_rate = -0.05
 rotation = 0.0
 n_trials = 2
-max_epochs = 3000
+max_epochs = 30000
 error_criterion = 0.00001
 
 def learning_rate_function():
@@ -46,19 +46,11 @@ def calc_n_hidden_layers(n_neurons_for_each_layer):
         n_hidden_layers = len(n_neurons_for_each_layer) - 2
     return n_hidden_layers
 
-
 def intermediate_post_process_netinputs(trial_params, data_collector, dfs_concatenated):
-    netinput_series = data_collector.extract_netinputs(layer_number=1)
-
-    first_hidden_neuron_netinputs_series = netinput_series[:,0,:]
-    first_hidden_neuron_netinputs_series.name = "first_hidden_neuron_netinputs_series"
-
-    df = DataFrame([first_hidden_neuron_netinputs_series])
-    #, columns=["weight0", "weight1", "hyperplane_angle", "epochs"] )
-    #df["treatment"] = trial_params
+    data = data_collector.extract_netinputs(trial_params, layer_number=1)
+    df = DataFrame(data)
     dfs_concatenated = pd.concat([dfs_concatenated, df])
     return dfs_concatenated
-
 
 # rotate clockwise!!
 for an_instance in training_set:
@@ -122,7 +114,7 @@ print
 print dfs_concatenated
 print
 
-print dfs_concatenated["end"][0]
+# print dfs_concatenated["end"][0]
 
 # end_netinputs = dfs_concatenated["end"]["first_hidden_neuron_netinputs_series"]
 # treatment_values = dfs_concatenated["treatment"]["first_hidden_neuron_netinputs_series"]

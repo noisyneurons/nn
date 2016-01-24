@@ -47,25 +47,10 @@ def calc_n_hidden_layers(n_neurons_for_each_layer):
     return n_hidden_layers
 
 def intermediate_post_process_weights(trial_params, data_collector, dfs_concatenated):
-    weight_series = data_collector.extract_weights(layer_number=1)
-
-    #print "weight_series =", weight_series
-    w0_series = weight_series[:,0,0]
-    w0_series.name = "weight0"
-    w1_series = weight_series[:,0,1]
-    w1_series.name = "weight1"
-
-    ratios = w0_series / w1_series
-    convert_to_angles_function = lambda x: 180.0 * math.atan(x) / math.pi
-    extracted_series = ratios.map(convert_to_angles_function)
-    extracted_series.name = "hyperplane_angle"
-
-    df = DataFrame([w0_series, w1_series, extracted_series])
-    #, columns=["weight0", "weight1", "hyperplane_angle", "epochs"] )
-    df["treatment"] = trial_params
+    data = data_collector.extract_weights(trial_params, layer_number=1)
+    df = DataFrame(data)
     dfs_concatenated = pd.concat([dfs_concatenated, df])
     return dfs_concatenated
-
 
 # rotate clockwise!!
 for an_instance in training_set:
@@ -126,17 +111,17 @@ print results
 print
 print np.median(results)
 print
-print dfs_concatenated
+print "dfs_concatenated:\n", dfs_concatenated
 print
 
-end_angle_values = dfs_concatenated["end"]["hyperplane_angle"]
-treatment_values = dfs_concatenated["treatment"]["hyperplane_angle"]
-list_of_dfs = [treatment_values] + [ (dfs_concatenated[epochs]["hyperplane_angle"]) for epochs in [0] ] + [end_angle_values]
-selected_df =  pd.concat( list_of_dfs, axis=1 )
-
-print selected_df
-print type(selected_df)
-
-plt.scatter(selected_df["treatment"], selected_df["end"])
-#pd.scatter_matrix(selected_df, diagonal='kde', color='k', alpha=0.3)
-plt.show()
+# end_angle_values = dfs_concatenated["end"]["hyperplane_angle"]
+# treatment_values = dfs_concatenated["treatment"]["hyperplane_angle"]
+# list_of_dfs = [treatment_values] + [ (dfs_concatenated[epochs]["hyperplane_angle"]) for epochs in [0] ] + [end_angle_values]
+# selected_df =  pd.concat( list_of_dfs, axis=1 )
+#
+# print selected_df
+# print type(selected_df)
+#
+# plt.scatter(selected_df["treatment"], selected_df["end"])
+# #pd.scatter_matrix(selected_df, diagonal='kde', color='k', alpha=0.3)
+# plt.show()

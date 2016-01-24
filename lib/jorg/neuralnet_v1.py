@@ -51,44 +51,61 @@ class NetworkDataCollector:
         if epoch%self.data_collection_interval == 0:
             self.data_dictionary[epoch][example_number] = deepcopy(self.network)
 
-    def extract_weights(self, layer_number=0, example_number=0):
-        weights = []
-        epoch_idx = []
-        neuron_idx = []
-        weight_idx = []
+    def extract_weights(self, trial_params, layer_number=0, example_number=0):
+        data = {}
+        data['trial'] = []
+        data['epochs'] =  []
+        data['example_number'] =  []
+        data['layer_number'] = []
+        data['neuron_num'] = []
+        data['link_num'] = []
+        data['weight'] = []
+        data['hyperplane_angle'] = []
+
         epochs = self.data_dictionary.keys()
         for epoch in epochs:
             net_snapshot = self.data_dictionary[epoch][example_number]
-            for i_neuron, neuron in enumerate(net_snapshot.layers[layer_number].learning_neurons):
-                for i_weight, link in enumerate(neuron.links):
-                    epoch_idx.append(epoch)
-                    neuron_idx.append(i_neuron)
-                    weight_idx.append(i_weight)
-                    weights.append(link.weight)
-        weight_series = Series(weights, index=[epoch_idx, neuron_idx, weight_idx])
-        weight_series.index.names = ['epochs','neuron_num','weight_num']
-        return weight_series
+            for neuron_num, neuron in enumerate(net_snapshot.layers[layer_number].learning_neurons):
 
-    def extract_netinputs(self, layer_number=0):
+                weight_ratio = neuron.links[0].weight / neuron.links[1].weight
+                hyperplane_angle = 180.0 * math.atan(weight_ratio) / math.pi
+
+                for link_num, link in enumerate(neuron.links):
+                    data['trial'].append(trial_params)
+                    data['epochs'].append(epoch)
+                    data['example_number'].append(example_number)
+                    data['layer_number'].append(layer_number)
+                    data['neuron_num'].append(neuron_num)
+                    data['link_num'].append(link_num)
+                    data['weight'].append(link.weight)
+                    data['hyperplane_angle'].append(hyperplane_angle)
+        return data
+
+
+    def extract_netinputs(self, trial_params, layer_number=0):
         n_training_examples = self.network.n_training_examples
+        data = {}
+        data['trial'] = []
+        data['epochs'] =  []
+        data['example_number'] =  []
+        data['layer_number'] = []
+        data['neuron_num'] = []
+        data['netinput'] = []
+        data['output'] = []
 
-        netinputs = []
-        epoch_idx = []
-        neuron_idx = []
-        example_num_idx = []
         epochs = self.data_dictionary.keys()
         for epoch in epochs:
             for example_number in xrange(n_training_examples):
                 net_snapshot = self.data_dictionary[epoch][example_number]
-                for i_neuron, neuron in enumerate(net_snapshot.layers[layer_number].learning_neurons):
-                    epoch_idx.append(epoch)
-                    neuron_idx.append(i_neuron)
-                    example_num_idx.append(example_number)
-                    netinputs.append(neuron.netinput)
-        netinput_series = Series(netinputs, index=[epoch_idx, neuron_idx, example_num_idx])
-        netinput_series.index.names = ['epochs','neuron_num','example_num']
-        return netinput_series
-
+                for neuron_num, neuron in enumerate(net_snapshot.layers[layer_number].learning_neurons):
+                    data['trial'].append(trial_params)
+                    data['epochs'].append(epoch)
+                    data['example_number'].append(example_number)
+                    data['layer_number'].append(layer_number)
+                    data['neuron_num'].append(neuron_num)
+                    data['netinput'].append(neuron.netinput)
+                    data['output'].append(neuron.output)
+        return data
 
 class Instance:
     def __init__(self, features, targets):
