@@ -12,31 +12,35 @@ from pandas import Series, DataFrame
 import pandas as pd
 
 from jorg.neuralnet_v1 import \
-NeuralNet, Instance, NetworkDataCollector, weight_init_function_random, learning_rate_function
+NeuralNet, Instance, NetworkDataCollector, weight_init_function_random
 
 from jorg.activation_classes import SigmoidIO, LinearIO, ConstantOutput, GaussGauss, Gauss, STDNonMonotonicIOFunction
+sigmoid = SigmoidIO()
+linear = LinearIO()
+constant = ConstantOutput()
+nonmon = STDNonMonotonicIOFunction()
 
 n_hidden_neurons = 1
-learning_rate = -0.5
+learning_rate = -0.1
 rotation = 0.0
-n_trials = 10
-max_epochs = 3000
+n_trials = 2
+max_epochs = 10000
 error_criterion = 0.00001
+output_neurons_io_function = linear
 
 def learning_rate_function():
     return learning_rate
 
 def experiment_set_selected_weights(network):
-    # output_neurons = network.layers[2].neurons
-    # for output_neuron in output_neurons:
-    #     output_neuron.links[0].weight = 0.0
-    #     output_neuron.links[1].weight = 0.0
+    output_neurons = network.layers[2].neurons
+    for output_neuron in output_neurons:
+        output_neuron.links[0].weight = 0.1
+        output_neuron.links[1].weight = 0.1
 
-    # hidden_neurons = network.layers[1].neurons_wo_bias_neuron
-    # for hidden_neuron in hidden_neurons:
-    #     hidden_neuron.links[0].weight = 1.0
-    #     hidden_neuron.links[1].weight = 0.0
-    pass
+    hidden_neurons = network.layers[1].neurons_wo_bias_neuron
+    for hidden_neuron in hidden_neurons:
+        hidden_neuron.links[0].weight = 0.0
+        hidden_neuron.links[1].weight = 1.0
 
 # "identity" training set
 training_set = [ Instance( [0.0, 0.0], [0.0, 0.0] ), Instance( [0.0, 1.0], [0.0, 1.0] ), Instance( [1.0, 0.0], [1.0, 0.0] ), Instance( [1.0, 1.0], [1.0, 1.0] ) ]
@@ -62,13 +66,9 @@ n_outputs = 2
 n_neurons_for_each_layer = [n_inputs, n_hidden_neurons, n_outputs]
 n_hidden_layers = calc_n_hidden_layers(n_neurons_for_each_layer)
 
-sigmoid = SigmoidIO()
-linear = LinearIO()
-constant = ConstantOutput()
-nonmon = STDNonMonotonicIOFunction()
 
 # specify neuron transforms, weight initialization, and learning rate functions... per layer
-neurons_ios = [None] + [nonmon] * n_hidden_layers + [sigmoid]
+neurons_ios = [None] + [nonmon] * n_hidden_layers + [output_neurons_io_function]
 weight_init_functions = [None] + [ weight_init_function_random ]*n_hidden_layers + [ weight_init_function_random ]
 learning_rate_functions = [None] + [ learning_rate_function ]*n_hidden_layers + [ learning_rate_function ]
 
@@ -112,7 +112,7 @@ print results
 print
 print np.median(results)
 print
-print dfs_concatenated
+print "dfs_concatenated:\n", dfs_concatenated
 print
 
 dfs = dfs_concatenated

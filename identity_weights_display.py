@@ -15,27 +15,32 @@ from jorg.neuralnet_v1 import \
 NeuralNet, Instance, NetworkDataCollector, weight_init_function_random
 
 from jorg.activation_classes import SigmoidIO, LinearIO, ConstantOutput, GaussGauss, Gauss, STDNonMonotonicIOFunction
+sigmoid = SigmoidIO()
+linear = LinearIO()
+constant = ConstantOutput()
+nonmon = STDNonMonotonicIOFunction()
 
 n_hidden_neurons = 1
-learning_rate = -0.1
+learning_rate = -0.5
 rotation = 0.0
-n_trials = 2
+n_trials = 10
 max_epochs = 10000
 error_criterion = 0.00001
+output_neurons_io_function = sigmoid
 
 def learning_rate_function():
     return learning_rate
 
 def experiment_set_selected_weights(network):
-    # output_neurons = network.layers[2].neurons
-    # for output_neuron in output_neurons:
-    #     output_neuron.links[0].weight = 0.0
-    #     output_neuron.links[1].weight = 0.0
+    output_neurons = network.layers[2].neurons
+    for output_neuron in output_neurons:
+        output_neuron.links[0].weight = 0.1
+        output_neuron.links[1].weight = 0.1
 
     hidden_neurons = network.layers[1].neurons_wo_bias_neuron
     for hidden_neuron in hidden_neurons:
-        hidden_neuron.links[0].weight = 1.0
-        hidden_neuron.links[1].weight = 0.0
+        hidden_neuron.links[0].weight = 0.0
+        hidden_neuron.links[1].weight = 1.0
 
 # "identity" training set
 training_set = [ Instance( [0.0, 0.0], [0.0, 0.0] ), Instance( [0.0, 1.0], [0.0, 1.0] ), Instance( [1.0, 0.0], [1.0, 0.0] ), Instance( [1.0, 1.0], [1.0, 1.0] ) ]
@@ -46,11 +51,18 @@ def calc_n_hidden_layers(n_neurons_for_each_layer):
         n_hidden_layers = len(n_neurons_for_each_layer) - 2
     return n_hidden_layers
 
-def intermediate_post_process_weights(trial_params, data_collector, dfs_concatenated):
+def intermediate_post_process_weights(trial_params, data_collector, df_weights):
     data = data_collector.extract_weights(trial_params, layer_number=1)
     df = DataFrame(data)
-    dfs_concatenated = pd.concat([dfs_concatenated, df])
-    return dfs_concatenated
+    df_weights = pd.concat([df_weights, df])
+    return df_weights
+
+def intermediate_post_process_netinputs(trial_params, data_collector, df_netinputs):
+    data = data_collector.extract_netinputs(trial_params, layer_number=1)
+    df = DataFrame(data)
+    df_netinputs = pd.concat([df_netinputs, df])
+    return df_netinputs
+
 
 # rotate clockwise!!
 for an_instance in training_set:
@@ -61,18 +73,15 @@ n_outputs = 2
 n_neurons_for_each_layer = [n_inputs, n_hidden_neurons, n_outputs]
 n_hidden_layers = calc_n_hidden_layers(n_neurons_for_each_layer)
 
-sigmoid = SigmoidIO()
-linear = LinearIO()
-constant = ConstantOutput()
-nonmon = STDNonMonotonicIOFunction()
 
 # specify neuron transforms, weight initialization, and learning rate functions... per layer
-neurons_ios = [None] + [nonmon] * n_hidden_layers + [sigmoid]
+neurons_ios = [None] + [nonmon] * n_hidden_layers + [output_neurons_io_function]
 weight_init_functions = [None] + [ weight_init_function_random ]*n_hidden_layers + [ weight_init_function_random ]
 learning_rate_functions = [None] + [ learning_rate_function ]*n_hidden_layers + [ learning_rate_function ]
 
 results = []
-dfs_concatenated = DataFrame([])
+df_weights = DataFrame([])
+df_netinputs = DataFrame([])
 
 for seed_value in range(n_trials):
     print "seed = ", seed_value,
@@ -98,7 +107,8 @@ for seed_value in range(n_trials):
     # load a stored network
     # network = NeuralNet.load_from_file( "trained_configuration.pkl" )
    
-    dfs_concatenated = intermediate_post_process_weights(seed_value, data_collector, dfs_concatenated)
+    df_weights = intermediate_post_process_weights(seed_value, data_collector, df_weights)
+    df_netinputs = intermediate_post_process_netinputs(seed_value, data_collector, df_netinputs)
 
     # print out the result
     for example_number, example in enumerate(training_set):
@@ -111,31 +121,54 @@ print results
 print
 print np.median(results)
 print
-print "dfs_concatenated:\n", dfs_concatenated
+print "df_weights:\n", df_weights
+print "\ndf_netinputs:\n", df_netinputs
 print
 
-dfs = dfs_concatenated
-
+dfs = df_weights
 end_records = dfs[dfs["epochs"] == "end"]
 grouped_records = end_records.groupby("trial").mean()
 result_records = grouped_records['hyperplane_angle']
-
-print "end_records:\n", end_records
-print "grouped_records:\n", grouped_records
+#print "end_records:\n", end_records
+#print "grouped_records:\n", grouped_records
 print "result_records:\n", result_records
+plt.plot(result_records)
+plt.show()
+
+
+dfs = df_netinputs
+end_records = dfs[dfs["epochs"] == "end"]
+print  "end_records", end_records
+plt.scatter(end_records["example_number"], end_records["netinput"])
+plt.show()
+plt.scatter(end_records["example_number"], end_records["output"])
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # plt.scatter(end_records["trial"], end_records["hyperplane_angle"])
 # plt.show()
 # plt.scatter(grouped_records.index, grouped_records["hyperplane_angle"])
 # plt.show()
-plt.plot(result_records)
-plt.show()
+
 
 # plt.plot(grouped_records["hyperplane_angle"])
 # plt.plot(result_records)
 
-# treatment_values = dfs_concatenated["treatment"]["hyperplane_angle"]
-# list_of_dfs = [treatment_values] + [ (dfs_concatenated[epochs]["hyperplane_angle"]) for epochs in [0] ] + [end_angle_values]
+# treatment_values = df_weights["treatment"]["hyperplane_angle"]
+# list_of_dfs = [treatment_values] + [ (df_weights[epochs]["hyperplane_angle"]) for epochs in [0] ] + [end_angle_values]
 # selected_df =  pd.concat( list_of_dfs, axis=1 )
 #
 # print selected_df
