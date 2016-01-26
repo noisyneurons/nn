@@ -112,4 +112,22 @@ def gen_testing_array(offset, increment, grid_divisions):
     return [ [x, io(x)] for x in xs ]
     
 
+# def findNetInputThatGeneratesMaximumOutput(io_function):
+#     grid_divisions = 20
+#     offset = 0.0
+#     increment = 5.0 / grid_divisions
+#     max_xy = None
+#     for i in xrange(40):
+#         xys = gen_testing_array(io_function, offset, increment, grid_divisions)
+#         max_xy = max(xys, key=lambda xy: xy[1])
+#         offset = max_xy[0] - increment
+#         increment = 2.0 * increment / grid_divisions
+#     return max_xy[0]
+#
+#
+# def gen_testing_array(io_function, offset, increment, grid_divisions):
+#     xs = [ (offset + (grid_div * increment)) for grid_div in range(0, grid_divisions)]
+#     return [ [x, io_function(x)] for x in xs ]
+#
+# print findNetInputThatGeneratesMaximumOutput(nonmon.io)
 

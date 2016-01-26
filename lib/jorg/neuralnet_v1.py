@@ -1,5 +1,4 @@
-# elmannet.py
-
+# neuralnet_v1.py
 
 # %matplotlib inline
 from __future__ import division
@@ -18,9 +17,6 @@ from jorg.activation_classes import LinearIO
 
 def weight_init_function_random():
     return random.uniform(-0.5,0.5)
-    
-def learning_rate_function():
-    return -1.0
 
 def connect_to_next_layer(lower_layer, upper_layer):
     for i, lower_neuron in enumerate(lower_layer.neurons):

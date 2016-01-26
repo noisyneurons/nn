@@ -12,7 +12,7 @@ from pandas import Series, DataFrame
 import pandas as pd
 
 from jorg.neuralnet_v1 import \
-NeuralNet, Instance, NetworkDataCollector, weight_init_function_random, learning_rate_function
+NeuralNet, Instance, NetworkDataCollector, weight_init_function_random
 
 from jorg.activation_classes import SigmoidIO, LinearIO, ConstantOutput, GaussGauss, Gauss, STDNonMonotonicIOFunction
 
