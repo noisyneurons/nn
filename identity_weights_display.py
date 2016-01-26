@@ -19,7 +19,7 @@ from jorg.activation_classes import SigmoidIO, LinearIO, ConstantOutput, GaussGa
 n_hidden_neurons = 1
 learning_rate = -0.01
 rotation = 0.0
-n_trials = 3
+n_trials = 2
 max_epochs = 10000
 error_criterion = 0.00001
 
@@ -114,7 +114,25 @@ print
 print "dfs_concatenated:\n", dfs_concatenated
 print
 
-# end_angle_values = dfs_concatenated["end"]["hyperplane_angle"]
+dfs = dfs_concatenated
+
+end_records = dfs[dfs["epochs"] == "end"]
+grouped_records = end_records.groupby("trial").mean()
+result_records = grouped_records['hyperplane_angle']
+
+print "end_records:\n", end_records
+print "grouped_records:\n", grouped_records
+print "result_records:\n", result_records
+
+# plt.scatter(end_records["trial"], end_records["hyperplane_angle"])
+# plt.scatter(grouped_records.index, grouped_records["hyperplane_angle"])
+plt.scatter(result_records.index, result_records)
+# plt.plot(grouped_records["hyperplane_angle"])
+plt.show()
+
+# plt.plot(grouped_records["hyperplane_angle"])
+# plt.plot(result_records)
+
 # treatment_values = dfs_concatenated["treatment"]["hyperplane_angle"]
 # list_of_dfs = [treatment_values] + [ (dfs_concatenated[epochs]["hyperplane_angle"]) for epochs in [0] ] + [end_angle_values]
 # selected_df =  pd.concat( list_of_dfs, axis=1 )
