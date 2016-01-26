@@ -17,7 +17,7 @@ NeuralNet, Instance, NetworkDataCollector, weight_init_function_random, learning
 from jorg.activation_classes import SigmoidIO, LinearIO, ConstantOutput, GaussGauss, Gauss, STDNonMonotonicIOFunction
 
 n_hidden_neurons = 1
-learning_rate = -0.01
+learning_rate = -0.1
 rotation = 0.0
 n_trials = 2
 max_epochs = 10000
@@ -34,7 +34,7 @@ def experiment_set_selected_weights(network):
 
     hidden_neurons = network.layers[1].neurons_wo_bias_neuron
     for hidden_neuron in hidden_neurons:
-        hidden_neuron.links[0].weight = 2.0
+        hidden_neuron.links[0].weight = 1.0
         hidden_neuron.links[1].weight = 0.0
 
 # "identity" training set
@@ -67,7 +67,7 @@ constant = ConstantOutput()
 nonmon = STDNonMonotonicIOFunction()
 
 # specify neuron transforms, weight initialization, and learning rate functions... per layer
-neurons_ios = [None] + [nonmon] * n_hidden_layers + [linear]
+neurons_ios = [None] + [nonmon] * n_hidden_layers + [sigmoid]
 weight_init_functions = [None] + [ weight_init_function_random ]*n_hidden_layers + [ weight_init_function_random ]
 learning_rate_functions = [None] + [ learning_rate_function ]*n_hidden_layers + [ learning_rate_function ]
 
@@ -125,9 +125,10 @@ print "grouped_records:\n", grouped_records
 print "result_records:\n", result_records
 
 # plt.scatter(end_records["trial"], end_records["hyperplane_angle"])
+# plt.show()
 # plt.scatter(grouped_records.index, grouped_records["hyperplane_angle"])
-plt.scatter(result_records.index, result_records)
-# plt.plot(grouped_records["hyperplane_angle"])
+# plt.show()
+plt.plot(result_records)
 plt.show()
 
 # plt.plot(grouped_records["hyperplane_angle"])

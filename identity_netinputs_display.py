@@ -17,25 +17,26 @@ NeuralNet, Instance, NetworkDataCollector, weight_init_function_random, learning
 from jorg.activation_classes import SigmoidIO, LinearIO, ConstantOutput, GaussGauss, Gauss, STDNonMonotonicIOFunction
 
 n_hidden_neurons = 1
-learning_rate = -0.05
+learning_rate = -0.5
 rotation = 0.0
-n_trials = 2
-max_epochs = 30000
+n_trials = 10
+max_epochs = 3000
 error_criterion = 0.00001
 
 def learning_rate_function():
     return learning_rate
 
 def experiment_set_selected_weights(network):
-    output_neurons = network.layers[2].neurons
-    for output_neuron in output_neurons:
-        output_neuron.links[0].weight = 0.0
-        output_neuron.links[1].weight = 0.0
+    # output_neurons = network.layers[2].neurons
+    # for output_neuron in output_neurons:
+    #     output_neuron.links[0].weight = 0.0
+    #     output_neuron.links[1].weight = 0.0
 
-    hidden_neurons = network.layers[1].neurons_wo_bias_neuron
-    for hidden_neuron in hidden_neurons:
-        hidden_neuron.links[0].weight = 1.0
-        hidden_neuron.links[1].weight = 0.0
+    # hidden_neurons = network.layers[1].neurons_wo_bias_neuron
+    # for hidden_neuron in hidden_neurons:
+    #     hidden_neuron.links[0].weight = 1.0
+    #     hidden_neuron.links[1].weight = 0.0
+    pass
 
 # "identity" training set
 training_set = [ Instance( [0.0, 0.0], [0.0, 0.0] ), Instance( [0.0, 1.0], [0.0, 1.0] ), Instance( [1.0, 0.0], [1.0, 0.0] ), Instance( [1.0, 1.0], [1.0, 1.0] ) ]
@@ -67,7 +68,7 @@ constant = ConstantOutput()
 nonmon = STDNonMonotonicIOFunction()
 
 # specify neuron transforms, weight initialization, and learning rate functions... per layer
-neurons_ios = [None] + [nonmon] * n_hidden_layers + [linear]
+neurons_ios = [None] + [nonmon] * n_hidden_layers + [sigmoid]
 weight_init_functions = [None] + [ weight_init_function_random ]*n_hidden_layers + [ weight_init_function_random ]
 learning_rate_functions = [None] + [ learning_rate_function ]*n_hidden_layers + [ learning_rate_function ]
 
@@ -114,16 +115,13 @@ print
 print dfs_concatenated
 print
 
-# print dfs_concatenated["end"][0]
+dfs = dfs_concatenated
 
-# end_netinputs = dfs_concatenated["end"]["first_hidden_neuron_netinputs_series"]
-# treatment_values = dfs_concatenated["treatment"]["first_hidden_neuron_netinputs_series"]
-# list_of_dfs = [treatment_values] + [ (dfs_concatenated[epochs]["first_hidden_neuron_netinputs_series"]) for epochs in [0] ] + [end_netinputs]
-# selected_df =  pd.concat( list_of_dfs, axis=1 )
-#
-# print selected_df
-# print type(selected_df)
+end_records = dfs[dfs["epochs"] == "end"]
+print  "end_records", end_records
+plt.scatter(end_records["example_number"], end_records["netinput"])
+plt.show()
+plt.scatter(end_records["example_number"], end_records["output"])
+plt.show()
 
-# plt.scatter(selected_df["treatment"], selected_df["end"])
-# #pd.scatter_matrix(selected_df, diagonal='kde', color='k', alpha=0.3)
-# plt.show()
+
