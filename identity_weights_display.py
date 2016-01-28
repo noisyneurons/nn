@@ -126,6 +126,7 @@ for seed_value in range(n_trials):
     df_weights = post_process(seed_value, data_collector.extract_weights, df_weights)
     df_netinputs = post_process(seed_value, data_collector.extract_netinputs, df_netinputs)
 
+    print network
     # print networks input - output function
     print_nets_io_map()
 
@@ -157,7 +158,6 @@ panel3.scatter(end_records["example_number"], end_records["output"])
 
 print "result_records:\n", result_records
 print  "end_records", end_records
-
 plt.show()
 
 
