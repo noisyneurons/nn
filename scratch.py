@@ -35,7 +35,14 @@ print input_vals
 
 y = [ nonmon.io(input_val) for input_val in input_vals]
 
-
-
 plt.scatter(input_vals, y)
 plt.show()
+
+learning_rate = 0.5
+
+class MyTest:
+    def return_this(self):
+        return learning_rate
+
+mt = MyTest()
+print mt.return_this()
