@@ -23,10 +23,11 @@ nonmon = STDNonMonotonicIOFunction()
 n_hidden_neurons = 1
 learning_rate = -0.5
 rotation = 0.0
-n_trials = 10
-max_epochs = 10000
+n_trials = 2
+max_epochs = 3000
 error_criterion = 0.00001
 output_neurons_io_function = sigmoid
+data_collection_interval = 1000
 
 def learning_rate_function():
     return learning_rate
@@ -42,14 +43,31 @@ def experiment_set_selected_weights(network):
         hidden_neuron.links[0].weight = 0.0
         hidden_neuron.links[1].weight = 1.0
 
-# "identity" training set
-training_set = [ Instance( [0.0, 0.0], [0.0, 0.0] ), Instance( [0.0, 1.0], [0.0, 1.0] ), Instance( [1.0, 0.0], [1.0, 0.0] ), Instance( [1.0, 1.0], [1.0, 1.0] ) ]
+def create_4_graphs():
+    fig = plt.figure()
+    panel1 = fig.add_subplot(2, 2, 1)
+    panel2 = fig.add_subplot(2, 2, 2)
+    panel3 = fig.add_subplot(2, 2, 3)
+    panel4 = fig.add_subplot(2, 2, 4)
+    return panel1, panel2, panel3, panel4
+
+def label_plot(panel,xl,yl):
+    panel.set_xlabel(xl)
+    panel.set_ylabel(yl)
 
 def calc_n_hidden_layers(n_neurons_for_each_layer):
     n_hidden_layers = 0
     if len(n_neurons_for_each_layer) > 2:
         n_hidden_layers = len(n_neurons_for_each_layer) - 2
     return n_hidden_layers
+
+
+# "identity" training set
+training_set = [ Instance( [0.0, 0.0], [0.0, 0.0] ), Instance( [0.0, 1.0], [0.0, 1.0] ), Instance( [1.0, 0.0], [1.0, 0.0] ), Instance( [1.0, 1.0], [1.0, 1.0] ) ]
+
+# rotate
+for an_instance in training_set:
+    an_instance.rotate_by(rotation)
 
 def intermediate_post_process_weights(trial_params, data_collector, df_weights):
     data = data_collector.extract_weights(trial_params, layer_number=1)
@@ -63,10 +81,6 @@ def intermediate_post_process_netinputs(trial_params, data_collector, df_netinpu
     df_netinputs = pd.concat([df_netinputs, df])
     return df_netinputs
 
-
-# rotate clockwise!!
-for an_instance in training_set:
-    an_instance.rotate_by(rotation)
 
 n_inputs = 2
 n_outputs = 2
@@ -92,15 +106,13 @@ for seed_value in range(n_trials):
     experiment_set_selected_weights(network)
     print "\n\nNet BEFORE Training\n", network
     
-    data_collection_interval = 1000
+
     data_collector = NetworkDataCollector(network, data_collection_interval)
     
     # start training on test set one
     epoch_and_MSE = network.backpropagation(training_set, error_criterion, max_epochs, data_collector)  # sop call
     # epoch_and_MSE = network.backpropagation(training_set, 0.0000001, max_epochs, data_collector)
     results.append(epoch_and_MSE[0])
-
-    #print "\n\nNet After Training\n", network
 
     # save the network
     network.save_to_file( "trained_configuration.pkl" )
@@ -110,7 +122,7 @@ for seed_value in range(n_trials):
     df_weights = intermediate_post_process_weights(seed_value, data_collector, df_weights)
     df_netinputs = intermediate_post_process_netinputs(seed_value, data_collector, df_netinputs)
 
-    # print out the result
+    # print networks input - output function
     for example_number, example in enumerate(training_set):
         inputs_for_training_example = example.features
         network.inputs_for_training_example = inputs_for_training_example
@@ -125,30 +137,27 @@ print "df_weights:\n", df_weights
 print "\ndf_netinputs:\n", df_netinputs
 print
 
+
+
 dfs = df_weights
 end_records = dfs[dfs["epochs"] == "end"]
 grouped_records = end_records.groupby("trial").mean()
 result_records = grouped_records['hyperplane_angle']
-#print "end_records:\n", end_records
-#print "grouped_records:\n", grouped_records
-print "result_records:\n", result_records
-plt.plot(result_records)
-plt.show()
 
+panel1, panel2, panel3, panel4 = create_4_graphs()
+label_plot(panel1, 'Trial Number', 'Hyperplane Angle (degrees)')
+panel1.plot(result_records, 'go') # linestyle='--', color='g')
 
 dfs = df_netinputs
 end_records = dfs[dfs["epochs"] == "end"]
+label_plot(panel2, 'Example Number', 'Netinput to Neuron')
+panel2.scatter(end_records["example_number"], end_records["netinput"])
+label_plot(panel3, 'Example Number', 'Output of Neuron')
+panel3.scatter(end_records["example_number"], end_records["output"])
+
+print "result_records:\n", result_records
 print  "end_records", end_records
-plt.scatter(end_records["example_number"], end_records["netinput"])
 plt.show()
-plt.scatter(end_records["example_number"], end_records["output"])
-plt.show()
-
-
-
-
-
-
 
 
 

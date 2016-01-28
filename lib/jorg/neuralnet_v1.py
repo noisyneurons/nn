@@ -48,16 +48,7 @@ class NetworkDataCollector:
             self.data_dictionary[epoch][example_number] = deepcopy(self.network)
 
     def extract_weights(self, trial_params, layer_number=0, example_number=0):
-        data = {}
-        data['trial'] = []
-        data['epochs'] =  []
-        data['example_number'] =  []
-        data['layer_number'] = []
-        data['neuron_num'] = []
-        data['link_num'] = []
-        data['weight'] = []
-        data['hyperplane_angle'] = []
-
+        data = defaultdict(list)
         epochs = self.data_dictionary.keys()
         for epoch in epochs:
             net_snapshot = self.data_dictionary[epoch][example_number]
@@ -80,15 +71,7 @@ class NetworkDataCollector:
 
     def extract_netinputs(self, trial_params, layer_number=0):
         n_training_examples = self.network.n_training_examples
-        data = {}
-        data['trial'] = []
-        data['epochs'] =  []
-        data['example_number'] =  []
-        data['layer_number'] = []
-        data['neuron_num'] = []
-        data['netinput'] = []
-        data['output'] = []
-
+        data = defaultdict(list)
         epochs = self.data_dictionary.keys()
         for epoch in epochs:
             for example_number in xrange(n_training_examples):
