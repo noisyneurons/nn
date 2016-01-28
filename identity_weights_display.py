@@ -20,6 +20,7 @@ linear = LinearIO()
 constant = ConstantOutput()
 nonmon = STDNonMonotonicIOFunction()
 
+disable_2nd_target = False
 n_hidden_neurons = 1
 learning_rate = -0.5
 rotation = 0.0
@@ -43,8 +44,8 @@ def experiment_set_selected_weights(network):
 
     hidden_neurons = network.layers[1].neurons_wo_bias_neuron
     for hidden_neuron in hidden_neurons:
-        hidden_neuron.links[0].weight = 0.0
-        hidden_neuron.links[1].weight = 1.0
+        hidden_neuron.links[0].weight = 1.0
+        hidden_neuron.links[1].weight = 0.0
 
 def create_4_graphs():
     fig = plt.figure()
@@ -102,11 +103,11 @@ for seed_value in range(n_trials):
     # initialize the neural network
     network = NeuralNet(n_neurons_for_each_layer, neurons_ios, weight_init_functions, learning_rate_functions)
     experiment_set_selected_weights(network)
+
     ####
-
-    # second_output_neuron = network.layers[-1].neurons[1]
-    # second_output_neuron.activation_function = ConstantOutput()
-
+    if disable_2nd_target:
+        second_output_neuron = network.layers[-1].neurons[1]
+        second_output_neuron.activation_function = ConstantOutput()
     ####
 
     print "\n\nNet BEFORE Training\n", network
