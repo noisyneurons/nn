@@ -23,11 +23,14 @@ nonmon = STDNonMonotonicIOFunction()
 n_hidden_neurons = 1
 learning_rate = -0.5
 rotation = 0.0
-n_trials = 2
+n_trials = 5
 max_epochs = 3000
 error_criterion = 0.00001
 output_neurons_io_function = sigmoid
 data_collection_interval = 1000
+n_inputs = 2
+n_outputs = 2
+n_neurons_for_each_layer = [n_inputs, n_hidden_neurons, n_outputs]
 
 def learning_rate_function():
     return learning_rate
@@ -55,12 +58,20 @@ def label_plot(panel,xl,yl):
     panel.set_xlabel(xl)
     panel.set_ylabel(yl)
 
+def print_nets_io_map():
+    for example_number, example in enumerate(training_set):
+        inputs_for_training_example = example.features
+        network.inputs_for_training_example = inputs_for_training_example
+        output_from_network = network.calc_networks_output()
+        print "\tnetworks input:", example.features, "\tnetworks output:", output_from_network, "\ttarget:", example.targets
+
 def calc_n_hidden_layers(n_neurons_for_each_layer):
     n_hidden_layers = 0
     if len(n_neurons_for_each_layer) > 2:
         n_hidden_layers = len(n_neurons_for_each_layer) - 2
     return n_hidden_layers
 
+n_hidden_layers = calc_n_hidden_layers(n_neurons_for_each_layer)
 
 # "identity" training set
 training_set = [ Instance( [0.0, 0.0], [0.0, 0.0] ), Instance( [0.0, 1.0], [0.0, 1.0] ), Instance( [1.0, 0.0], [1.0, 0.0] ), Instance( [1.0, 1.0], [1.0, 1.0] ) ]
@@ -69,24 +80,11 @@ training_set = [ Instance( [0.0, 0.0], [0.0, 0.0] ), Instance( [0.0, 1.0], [0.0,
 for an_instance in training_set:
     an_instance.rotate_by(rotation)
 
-def intermediate_post_process_weights(trial_params, data_collector, df_weights):
-    data = data_collector.extract_weights(trial_params, layer_number=1)
-    df = DataFrame(data)
-    df_weights = pd.concat([df_weights, df])
-    return df_weights
-
-def intermediate_post_process_netinputs(trial_params, data_collector, df_netinputs):
-    data = data_collector.extract_netinputs(trial_params, layer_number=1)
-    df = DataFrame(data)
-    df_netinputs = pd.concat([df_netinputs, df])
-    return df_netinputs
-
-
-n_inputs = 2
-n_outputs = 2
-n_neurons_for_each_layer = [n_inputs, n_hidden_neurons, n_outputs]
-n_hidden_layers = calc_n_hidden_layers(n_neurons_for_each_layer)
-
+def post_process(trial_params, collection_function, data_frame):
+    data_dictionary = collection_function(trial_params, layer_number=1)
+    df_segment = DataFrame(data_dictionary)
+    data_frame = pd.concat([data_frame, df_segment])
+    return data_frame
 
 # specify neuron transforms, weight initialization, and learning rate functions... per layer
 neurons_ios = [None] + [nonmon] * n_hidden_layers + [output_neurons_io_function]
@@ -104,8 +102,14 @@ for seed_value in range(n_trials):
     # initialize the neural network
     network = NeuralNet(n_neurons_for_each_layer, neurons_ios, weight_init_functions, learning_rate_functions)
     experiment_set_selected_weights(network)
+    ####
+
+    # second_output_neuron = network.layers[-1].neurons[1]
+    # second_output_neuron.activation_function = ConstantOutput()
+
+    ####
+
     print "\n\nNet BEFORE Training\n", network
-    
 
     data_collector = NetworkDataCollector(network, data_collection_interval)
     
@@ -118,16 +122,12 @@ for seed_value in range(n_trials):
     network.save_to_file( "trained_configuration.pkl" )
     # load a stored network
     # network = NeuralNet.load_from_file( "trained_configuration.pkl" )
-   
-    df_weights = intermediate_post_process_weights(seed_value, data_collector, df_weights)
-    df_netinputs = intermediate_post_process_netinputs(seed_value, data_collector, df_netinputs)
+
+    df_weights = post_process(seed_value, data_collector.extract_weights, df_weights)
+    df_netinputs = post_process(seed_value, data_collector.extract_netinputs, df_netinputs)
 
     # print networks input - output function
-    for example_number, example in enumerate(training_set):
-        inputs_for_training_example = example.features
-        network.inputs_for_training_example = inputs_for_training_example
-        output_from_network = network.calc_networks_output()
-        print "\tnetworks input:", example.features, "\tnetworks output:", output_from_network, "\ttarget:", example.targets
+    print_nets_io_map()
 
 print results
 print
@@ -157,6 +157,7 @@ panel3.scatter(end_records["example_number"], end_records["output"])
 
 print "result_records:\n", result_records
 print  "end_records", end_records
+
 plt.show()
 
 

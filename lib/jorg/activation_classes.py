@@ -13,7 +13,8 @@ class SigmoidIO:
     def io_derivative(self, _, output):
         return (output * (1.0 - output))
 
-class LinearIO:    
+
+class LinearIO:
     def io(self, net_input):
         return net_input
         
@@ -21,7 +22,7 @@ class LinearIO:
         return 1.0
 
 class ConstantOutput:
-    def io(self, net_input):
+    def io(self, _):
         return 0.5
 
     def io_derivative(self, _, __):
