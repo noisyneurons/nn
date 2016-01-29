@@ -10,7 +10,7 @@ import math, random
 import numpy as np   
 
 from jorg.neuralnet_v1 import \
-NeuralNet, Instance, NetworkDataCollector, weight_init_function_random, learning_rate_function
+NeuralNet, Instance, NetworkDataCollector, weight_init_function_random
 
 from jorg.activation_classes import SigmoidIO, LinearIO, GaussGauss, Gauss, STDNonMonotonicIOFunction
 

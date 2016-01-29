@@ -12,8 +12,7 @@ import numpy as np
 import pandas as pd
 from pandas import Series, DataFrame
 
-from jorg.activation_classes import LinearIO
-
+from jorg.activation_classes import LinearIO, ConstantOutput
 
 def weight_init_function_random():
     return random.uniform(-0.5,0.5)
@@ -128,6 +127,8 @@ class NeuralNet:
         self.still_learning = True
         self.nearly_done = False
 
+        self.neurons_to_drop_out = []
+
         # Do not touch
         self._create_network()
         self._n_links = None
@@ -198,6 +199,7 @@ class NeuralNet:
             # 1-training-example per iteration
             for example_number, inputs_for_training_example in enumerate(training_inputs):
                 self.example_number = example_number
+                self.drop_out_neurons()
                 self.inputs_for_training_example = inputs_for_training_example
                 network_outputs = self.calc_networks_output()
                 collected_output_errors += self.calc_output_neurons_errors(network_outputs, training_targets[example_number])
@@ -252,6 +254,10 @@ class NeuralNet:
             for neuron in layer.learning_neurons:
                 neuron.adapt_weights_in_links()
 
+    def drop_out_neurons(self):
+        for layer in self.layers:
+            for neuron in layer.learning_neurons:
+                neuron.drop_out()
 
     def save_network_in_dictionary(self):
         links = self.get_links()  # need this to be called before "self.no_links" -- need to CLEAN this smell!
@@ -321,7 +327,7 @@ class Link:
 
 
 class HiddenNeuron:
-    def __init__(self, neuron_id, n_inputs, network, activation_function, weight_init_function, learning_rate_function):
+    def __init__(self, neuron_id, n_inputs, network, activation_function, weight_init_function, learning_rate_function, probability_of_drop_out=0.0):  # drop out
         self.neuron_id = neuron_id
         self.neuron_number = neuron_id[1]
         self.n_inputs = n_inputs
@@ -329,6 +335,9 @@ class HiddenNeuron:
         self.links = [ Link(weight_init_function) for _ in range(0, n_inputs+1)]  # +1 for bias link
         self.output_links = []
         self.activation_function = activation_function
+        self.original_activation_function = activation_function # drop out
+        self.probability_of_drop_out = probability_of_drop_out  # drop out
+        self.drop_out_activation_function = ConstantOutput()    # drop out
         self.weight_init_function = weight_init_function
         self.learning_rate_function = learning_rate_function
         self.error = None
@@ -355,6 +364,12 @@ class HiddenNeuron:
         for link in self.links:
             link.adapt_link_weight(self.error_at_input, self.learning_rate_function)
 
+    def drop_out(self):  # drop out
+        if random.uniform(0.0,1.0) < self.probability_of_drop_out:
+            self.activation_function = self.drop_out_activation_function
+        else:
+            self.activation_function = self.original_activation_function
+
     def __str__(self):
         weights = [link.weight for link in self.links]
         return 'Neuron Weights: %s  Net Input: %s  Output: %s' % (str(weights), str(self.netinput),  str(self.output))
@@ -375,16 +390,20 @@ class BiasNeuron:
         return 'BiasNeuron, Output = ' + str(self.output)
         
 class InputNeuron:
-    def __init__(self, neuron_id, network):
+    def __init__(self, neuron_id, network, probability_of_drop_out=0.0):  # drop out
         self.neuron_id = neuron_id
         self.neuron_number = neuron_id[1]
         self.output = None
         self.output_links = []
         self.network = network
+        self.probability_of_drop_out = probability_of_drop_out          # drop out
 
     def calc_neurons_output(self):
         inputs = self.network.inputs_for_training_example
-        self.output = inputs[self.neuron_number]
+        if random.uniform(0.0,1.0) < self.probability_of_drop_out:      # drop out
+            self.output = 0.5                                           # drop out
+        else:                                                           # drop out
+            self.output = inputs[self.neuron_number]
         return self.output
 
     def __str__(self):
@@ -422,7 +441,6 @@ class HiddenNeuronLayer:
 
 
 class InputNeuronLayer:
-    # This version does not currently contain 'learning elman neurons'
     def __init__(self, layer_number, network):
         self.network = network
         self.layer_number = layer_number

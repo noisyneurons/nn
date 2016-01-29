@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from pandas import Series, DataFrame
 import pandas as pd
 
-from jorg.neuralnet_v1 import NeuralNet, Instance, NetworkDataCollector, weight_init_function_random, learning_rate_function
+from jorg.neuralnet_v1 import NeuralNet, Instance, NetworkDataCollector, weight_init_function_random
 
 from jorg.activation_classes import STDNonMonotonicIOFunction
 

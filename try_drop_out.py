@@ -1,5 +1,4 @@
-# identity_weights_display.py
-# test/retest program results --> to benchmark other versions of the code...
+# try_drop_out.py
 
 #TODO implement weight-sharing
 
@@ -19,15 +18,16 @@ linear = LinearIO()
 constant = ConstantOutput()
 nonmon = STDNonMonotonicIOFunction()
 
-disable_2nd_output_neuron = False
-n_hidden_neurons = 2
+drop_out_probability = 0.5
+disable_2nd_output_neuron = True
+n_hidden_neurons = 1
 learning_rate = -0.5
 rotation = 0.0
 n_trials = 3
 max_epochs = 10000
 error_criterion = 0.00001
 hidden_neurons_io_function = sigmoid
-output_neurons_io_function = sigmoid
+output_neurons_io_function = nonmon
 data_collection_interval = 1000
 n_inputs = 2
 n_outputs = 2
@@ -38,15 +38,6 @@ def learning_rate_function():
 
 def experiment_set_selected_weights(network):
     pass
-    # output_neurons = network.layers[2].neurons
-    # for output_neuron in output_neurons:
-    #     output_neuron.links[0].weight = 0.1
-    #     output_neuron.links[1].weight = 0.1
-    #
-    # hidden_neurons = network.layers[1].neurons_wo_bias_neuron
-    # for hidden_neuron in hidden_neurons:
-    #     hidden_neuron.links[0].weight = 1.0
-    #     hidden_neuron.links[1].weight = 0.0
 
 def create_4_graphs():
     fig = plt.figure()
@@ -89,6 +80,7 @@ def post_process(trial_params, collection_function, data_frame):
     return data_frame
 
 # specify neuron transforms, weight initialization, and learning rate functions... per layer
+do_drop_out = [False] + [True] * n_hidden_layers + [False]
 neurons_ios = [None] + [hidden_neurons_io_function] * n_hidden_layers + [output_neurons_io_function]
 weight_init_functions = [None] + [ weight_init_function_random ]*n_hidden_layers + [ weight_init_function_random ]
 learning_rate_functions = [None] + [ learning_rate_function ]*n_hidden_layers + [ learning_rate_function ]
