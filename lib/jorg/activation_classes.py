@@ -21,11 +21,17 @@ class LinearIO:
     def io_derivative(self, _, __):
         return 1.0
 
+
 class ConstantOutput:
     def io(self, _):
         return 0.5
 
     def io_derivative(self, _, __):
+        return 0.0
+
+
+class FlatLine(ConstantOutput):
+    def io(self, _):
         return 0.0
 
 class Gauss:    
@@ -88,6 +94,30 @@ class STDNonMonotonicIOFunction:
         (  self.exp_p_s(x)/(((self.exp_p_s(x) + 1.0)**2.0) * self.w)   +  \
         self.exp_m_s(x)/(((self.exp_m_s(x) + 1.0)**2.0) * self.w)    )) 
         
+    def exp_p_s(self, x):
+        return  exp(-(x+self.s)/self.w)
+
+    def exp_m_s(self, x):
+        return  exp(-(x-self.s)/self.w)
+
+
+class NonmonSig:
+    # s is the horizontal shift of the io function, a is the amplitude of the "sidelobes," and w is the sidelobe "width"
+    def __init__(self, s=4.0, a=0.5, w=1.0):
+        self.s = s
+        self.a = a
+        self.w = w
+
+    def io(self, net_input):
+        net_input_clipped = np.clip( net_input, -500, 500 )
+        return 1.0 / (1.0 + exp(-net_input_clipped))
+
+    def io_derivative(self, input, output):
+        return 1.49786971589547 * self.j(input)
+
+    def j(self, x):
+        return (exp(-x) / ((exp(-x) + 1.0)**2.0)) - (self.a * (  self.exp_p_s(x)/(((self.exp_p_s(x) + 1.0)**2.0) * self.w) + self.exp_m_s(x)/(((self.exp_m_s(x) + 1.0)**2.0) * self.w)    ))
+
     def exp_p_s(self, x):
         return  exp(-(x+self.s)/self.w)
 

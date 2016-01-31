@@ -9,6 +9,7 @@ from __future__ import division
 import math, random
 import numpy as np   
 
+#from jorg.neuralnet_v2_dropout import \
 from jorg.neuralnet_v1 import \
 NeuralNet, Instance, NetworkDataCollector, weight_init_function_random
 
